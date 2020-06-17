@@ -6,6 +6,10 @@ library WinUser
 1 import: RegisterClassA
 0 import: GetLastError 
 4 import: DefWindowProcA
+4 import: GetMessageA
+1 import: TranslateMessage
+1 import: DispatchMessage
+2 import: ShowWindow
 
 create app-name ," MoonBugs" 0 ,
 app-name 1+ value app-name
@@ -22,14 +26,59 @@ app-title 1+ value app-title
 
 
 : test 
-	1 +to win-calls ." !" 0 ;
+	1 +to win-calls ;
 
-4 callback: MyWndProc  
-	test 
-	0
+4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
+	 
+	2 pick 
+	CASE
+	
+	    WM_NCCREATE OF
+			TRUE EXIT  
+		ENDOF
+		
+		WM_CREATE OF
+			0 EXIT 
+		ENDOF
+		
+		WM_SHOWWINDOW OF
+			0 EXIT 
+		ENDOF
+		
+		WM_MOUSEACTIVATE OF
+			MA_ACTIVATE EXIT 
+		ENDOF
+		
+		WM_WINDOWPOSCHANGING OF
+			0 EXIT 
+		ENDOF
+		
+		WM_PAINT OF
+			0 EXIT 
+		ENDOF         
+		
+		WM_GETMINMAXINFO OF
+			0 EXIT 
+		ENDOF
+		
+	.s cr
+	DefWindowProcA
+	
+	ENDCASE
+	
+	0 
 ;
 
+0 value hwnd
+0 variable MSG
  
+: poll 
+  BEGIN
+  0 0 hwnd MSG Call GetMessageA 
+  0 > WHILE 
+   MSG call TranslateMessage drop
+   MSG call DispatchMessage drop
+  REPEAT ;
 	
 align create wind-class
  CS_HREDRAW + CS_VREDRAW ,  
@@ -60,10 +109,10 @@ align create wind-class
 ;
 
  
+ 
 register-class value class-atom
-make-window value hwnd
-
-
- 0 z" test message" z" This is a test message" MB_OK MessageBoxA
-
+make-window to hwnd
+SW_SHOW hwnd ShowWindow
+ 
+ 
 
