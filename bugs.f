@@ -2,14 +2,22 @@
 library WinUser
 4 import: MessageBoxA
 0 import: GetModuleHandle
-12 import: CreateWindowExA
-1 import: RegisterClassA
+12 import: CreateWindowExW
+1 import: RegisterClassW
 0 import: GetLastError 
-4 import: DefWindowProcA
-4 import: GetMessageA
+4 import: DefWindowProcW
+4 import: GetMessageW
+5 import: PeekMessageW
 1 import: TranslateMessage
 1 import: DispatchMessage
 2 import: ShowWindow
+1 import: Sleep
+6 import: CreateThread
+1 import: UpdateWindow
+1 import: PostQuitMessage
+2 import: BeginPaint
+2 import: EndPaint
+3 import: FillRect
 
 create app-name ," MoonBugs" 0 ,
 app-name 1+ value app-name
@@ -23,16 +31,20 @@ app-title 1+ value app-title
 
 0 value hwnd
 
-0 variable MSG 7 cells allot
+( hwnd; message; wParam; lParam; time; pt; lPrivate; )
+  
+align variable MSG 8 cells allot
+align variable ps 16 cells allot
+align variable hdc 
 
 
+: for-us? MSG @ hwnd = ;
 
-: test 
-	1 +to win-calls ;
 
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
 	 
-
+	1 +to win-calls
+	 
 	2 pick ( uMsg ) CASE
 	
 		WM_NCCREATE OF
@@ -40,57 +52,48 @@ app-title 1+ value app-title
 		ENDOF
 		
 		WM_CREATE OF
+		    ." create " cr
+			0 EXIT 
+		ENDOF
+ 
+		WM_SIZE OF
+		    ." size " cr
+			0 EXIT 
+		ENDOF
+ 
+		WM_DESTROY OF
+			0 PostQuitMessage
 			0 EXIT 
 		ENDOF
 		
-		WM_SHOWWINDOW OF
-			0 EXIT 
-		ENDOF
-		
-		WM_MOUSEACTIVATE OF
-			MA_ACTIVATE EXIT 
-		ENDOF
-		
-		WM_WINDOWPOSCHANGING OF
-			0 EXIT 
-		ENDOF
 		
 		WM_PAINT OF
+		    ." paint " cr
+			ps hwnd CALL BeginPaint
+			COLOR_WINDOW 1 + ps 2 cells + hwnd CALL FillRect
+			ps hwnd CALL EndPaint
 			0 EXIT 
 		ENDOF         
 		
-		WM_GETMINMAXINFO OF
-			0 EXIT 
-		ENDOF
-		
-	.s cr
-	DefWindowProcA
-	
 	ENDCASE
-	
+
+	DefWindowProcW
+	 
+
 	0 
 ;
-
-
  
-: poll-loop 
-  BEGIN
-  0 0 hwnd MSG Call GetMessageA 
-  dup -1 = IF ." Error in message" drop EXIT THEN
-  0 > WHILE 
-   MSG call TranslateMessage drop
-   MSG call DispatchMessage drop
-  REPEAT ;
+
 	
 align create wind-class
- CS_HREDRAW + CS_VREDRAW ,  
+ 0 ,  
  ' MyWndProc , 	 
  0 , 			 
  0 , 			 
  hmod , 		 
  0 , 			 
  0 , 			 
- COLOR_BACKGROUND , 	 
+ 0 , 	 
  0 , 			 
  app-name , 		 
  0 ,
@@ -98,23 +101,46 @@ align create wind-class
  
 
 : register-class
-	 wind-class call RegisterClassA ;
-
-
+	 wind-class call RegisterClassW ;
 
 
 : make-window
- 0 hmod 0 0  
- 0 CW_USEDEFAULT		
- 0 CW_USEDEFAULT 
- 0 app-title app-name 0 call CreateWindowExA
+ 0 hmod 0 0   
+ 500 500		
+ 500 500 
+ 0 app-title app-name WS_EX_OVERLAPPEDWINDOW call CreateWindowExW
 ;
 
  
+hex
  
-register-class value class-atom
-make-window to hwnd
-SW_SHOW hwnd ShowWindow
- 
-poll-loop
+variable tid
+variable thread-param
+
+
+: poll-loop   
+
+	init-thread 
+	register-class 
+	make-window to hwnd
+	SW_SHOW hwnd ShowWindow
+	hwnd UpdateWindow
+	BEGIN
+	." start"
+	500 Sleep
+	 BEGIN
+	  0 0 hwnd MSG Call GetMessageW
+	  0 >  WHILE 
+		MSG call TranslateMessage drop
+		MSG call DispatchMessage drop
+		10 Sleep
+	  REPEAT 
+	 AGAIN ;
+	
+: start 
+	tid 0 thread-param ['] poll-loop 0 0 call CreateThread ;
+
+start  
+
+
 
