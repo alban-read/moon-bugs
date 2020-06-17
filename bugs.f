@@ -19,10 +19,12 @@ app-title 1+ value app-title
 
 0 call GetModuleHandle value hmod  
  
-: wm_created 
-  ." WM created" ;
-
 0 value win-calls
+
+0 value hwnd
+
+0 variable MSG 7 cells allot
+
 
 
 : test 
@@ -30,10 +32,10 @@ app-title 1+ value app-title
 
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
 	 
-	2 pick 
-	CASE
+
+	2 pick ( uMsg ) CASE
 	
-	    WM_NCCREATE OF
+		WM_NCCREATE OF
 			TRUE EXIT  
 		ENDOF
 		
@@ -69,12 +71,12 @@ app-title 1+ value app-title
 	0 
 ;
 
-0 value hwnd
-0 variable MSG
+
  
-: poll 
+: poll-loop 
   BEGIN
   0 0 hwnd MSG Call GetMessageA 
+  dup -1 = IF ." Error in message" drop EXIT THEN
   0 > WHILE 
    MSG call TranslateMessage drop
    MSG call DispatchMessage drop
@@ -114,5 +116,5 @@ register-class value class-atom
 make-window to hwnd
 SW_SHOW hwnd ShowWindow
  
- 
+poll-loop
 
