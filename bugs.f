@@ -2,12 +2,12 @@
 library WinUser
 4 import: MessageBoxA
 0 import: GetModuleHandle
-12 import: CreateWindowExW
-1 import: RegisterClassW
+12 import: CreateWindowExA
+1 import: RegisterClassA
 0 import: GetLastError 
-4 import: DefWindowProcW
-4 import: GetMessageW
-5 import: PeekMessageW
+4 import: DefWindowProcA
+4 import: GetMessageA
+5 import: GetMessageA
 1 import: TranslateMessage
 1 import: DispatchMessage
 2 import: ShowWindow
@@ -18,6 +18,10 @@ library WinUser
 2 import: BeginPaint
 2 import: EndPaint
 3 import: FillRect
+1 import: SetActiveWindow
+1 import: GetStockObject
+2 import: GetClientRect
+
 
 create app-name ," MoonBugs" 0 ,
 app-name 1+ value app-name
@@ -26,17 +30,15 @@ create app-title ," Moon Bugs" 0 ,
 app-title 1+ value app-title
 
 0 call GetModuleHandle value hmod  
- 
+8 cells allot
 0 value win-calls
-
-0 value hwnd
-
-( hwnd; message; wParam; lParam; time; pt; lPrivate; )
-  
-align variable MSG 8 cells allot
-align variable ps 16 cells allot
-align variable hdc 
-
+0 value hwnd 8 cells allot
+0 value hdc 8 cells allot
+align variable rect 8 cells allot
+align variable brush 8 cells allot
+align variable MSG 24 cells allot
+align variable ps 24 cells allot
+0 value lresult 8 cells allot
 
 : for-us? MSG @ hwnd = ;
 
@@ -44,48 +46,71 @@ align variable hdc
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
 	 
 	1 +to win-calls
-	 
-	2 pick ( uMsg ) CASE
+	0 to lresult 
 	
-		WM_NCCREATE OF
-			TRUE EXIT  
-		ENDOF
-		
-		WM_CREATE OF
-		    ." create " cr
-			0 EXIT 
-		ENDOF
- 
-		WM_SIZE OF
-		    ." size " cr
-			0 EXIT 
-		ENDOF
- 
-		WM_DESTROY OF
-			0 PostQuitMessage
-			0 EXIT 
-		ENDOF
-		
-		
-		WM_PAINT OF
-		    ." paint " cr
-			ps hwnd CALL BeginPaint
-			COLOR_WINDOW 1 + ps 2 cells + hwnd CALL FillRect
-			ps hwnd CALL EndPaint
-			0 EXIT 
-		ENDOF         
-		
-	ENDCASE
+	 ." in "  
+	.s cr
+	
+	hwnd 0 > IF
+		3 pick hwnd = not IF 
+		." not my window " 
+		THEN
+	THEN
+	cr
+	
+	2 pick ( uMsg )  WM_NCCREATE = IF
+		4drop 
+		TRUE
+		EXIT 
+	THEN
+	
+	2 pick ( uMsg )  WM_CREATE = IF
+		4drop  0 
+		EXIT 
+	THEN
 
-	DefWindowProcW
-	 
+	2 pick ( uMsg ) WM_DESTROY = IF
+		0 PostQuitMessage
+		4drop 0 EXIT 
+	THEN
+	
+	2 pick ( uMsg ) WM_PAINT = IF
+		4drop 
+		." paint begin "  
+		ps hwnd call BeginPaint to hdc
+	
+		rect hwnd call GetClientRect drop 
+		
+		COLOR_WINDOWFRAME  1 +  rect hdc call FillRect drop
+		
+		
+		ps hwnd call EndPaint drop
+		0 
+		." end "
+		.s cr EXIT 
+	THEN  
+		
+	2 pick ( uMsg )  WM_SETCURSOR = IF
+		4drop 
+		TRUE
+		EXIT 
+	THEN	
+		
+		
+ 
+ 	." defproc" .s
+	call DefWindowProcA
+	." -- " .s cr 
+	EXIT
+ 
 
-	0 
+	
 ;
  
 
 	
-align create wind-class
+align 
+create wind-class
  0 ,  
  ' MyWndProc , 	 
  0 , 			 
@@ -93,7 +118,7 @@ align create wind-class
  hmod , 		 
  0 , 			 
  0 , 			 
- 0 , 	 
+ COLOR_WINDOW 1 + , 	 
  0 , 			 
  app-name , 		 
  0 ,
@@ -101,15 +126,16 @@ align create wind-class
  
 
 : register-class
-	 wind-class call RegisterClassW ;
+	 wind-class call RegisterClassA ;
 
 
 : make-window
- 0 hmod 0 0   
- 500 500		
- 500 500 
- 0 app-title app-name WS_EX_OVERLAPPEDWINDOW call CreateWindowExW
+ 0 hmod 0 0  
+ CW_USEDEFAULT CW_USEDEFAULT		
+ CW_USEDEFAULT CW_USEDEFAULT 
+ WS_OVERLAPPEDWINDOW  app-title app-name 0 call CreateWindowExA
 ;
+
 
  
 hex
@@ -117,30 +143,28 @@ hex
 variable tid
 variable thread-param
 
-
+ 
 : poll-loop   
 
 	init-thread 
-	register-class 
+	register-class drop
 	make-window to hwnd
-	SW_SHOW hwnd ShowWindow
-	hwnd UpdateWindow
+	SW_SHOWDEFAULT hwnd call ShowWindow drop
 	BEGIN
-	." start"
-	500 Sleep
-	 BEGIN
-	  0 0 hwnd MSG Call GetMessageW
-	  0 >  WHILE 
-		MSG call TranslateMessage drop
-		MSG call DispatchMessage drop
+		." poll loop" cr
 		10 Sleep
-	  REPEAT 
-	 AGAIN ;
+		BEGIN
+		0 0 hwnd MSG Call GetMessageA 
+		dup -1 = IF ." poll error" cr THEN
+		0 >  WHILE 
+			MSG call DispatchMessage drop
+		REPEAT 
+	AGAIN ;
 	
 : start 
-	tid 0 thread-param ['] poll-loop 0 0 call CreateThread ;
+	tid 0 thread-param ['] poll-loop 0 0 call CreateThread drop ;
 
-start  
+ 
 
 
 
