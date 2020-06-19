@@ -153,7 +153,27 @@ align variable ps 24 cells allot
 		call DefWindowProcA
 		EXIT
 	THEN	
-			
+	
+	umsg@ WM_KEYDOWN = IF
+		." keys "
+		wparam@ VK_LEFT = IF
+			." left"
+		THEN
+		wparam@ VK_RIGHT = IF
+			." right"
+		THEN
+		wparam@ VK_SPACE = IF
+			." fire"
+		THEN
+		wparam@ VK_ESCAPE = IF
+			." end"
+			hwnd@ CloseWindow
+			discard
+			0 EXIT
+		THEN
+		call DefWindowProcA 
+		EXIT 
+	THEN			
  	." defproc " .message
 	call DefWindowProcA
  
