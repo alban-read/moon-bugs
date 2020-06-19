@@ -21,8 +21,18 @@ library WinUser
 1 import: SetActiveWindow
 1 import: GetStockObject
 2 import: GetClientRect
+		
+ 		
+code hiword   
+	shr eax #16      
+	and eax $FFFF
+next; inline
 
-
+code lowword      
+	and eax $FFFF
+next; inline
+				
+				
 create app-name ," MoonBugs" 0 ,
 app-name 1+ value app-name
 
@@ -34,7 +44,7 @@ app-title 1+ value app-title
 0 value win-calls
 0 value hwnd 8 cells allot
 0 value hdc 8 cells allot
-align variable rect 8 cells allot
+align variable rect   8 cells allot
 align variable brush 8 cells allot
 align variable MSG 24 cells allot
 align variable ps 24 cells allot
@@ -46,22 +56,19 @@ align variable ps 24 cells allot
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
 	 
 	1 +to win-calls
-	0 to lresult 
-	
+
 	 ." in "  
 	.s cr
 	
 	hwnd 0 > IF
 		3 pick hwnd = not IF 
-		." not my window " 
+		." not my window! " 
 		THEN
 	THEN
 	cr
 	
 	2 pick ( uMsg )  WM_NCCREATE = IF
-		4drop 
-		TRUE
-		EXIT 
+		4drop TRUE EXIT 
 	THEN
 	
 	2 pick ( uMsg )  WM_CREATE = IF
@@ -85,9 +92,10 @@ align variable ps 24 cells allot
 		
 		
 		ps hwnd call EndPaint drop
-		0 
+		
 		." end "
-		.s cr EXIT 
+		.s cr 
+		0 EXIT 
 	THEN  
 		
 	2 pick ( uMsg )  WM_SETCURSOR = IF
@@ -96,7 +104,15 @@ align variable ps 24 cells allot
 		EXIT 
 	THEN	
 		
-		
+	2 pick ( uMsg )  WM_NCHITTEST = IF
+		." hit x y "
+		dup lowword .
+		dup hiword .
+		cr
+		call DefWindowProcA
+		EXIT
+	THEN	
+			
  
  	." defproc" .s
 	call DefWindowProcA
