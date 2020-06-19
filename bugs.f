@@ -32,7 +32,55 @@ code lowword
 	and eax $FFFF
 next; inline
 				
-				
+\ message access
+\ ( hwnd uMsg wParam lParam )
+\    
+
+code umsg@   
+    0 1 in/out
+	mov dword { $-4 ebp } eax
+	mov eax dword { $4 ebp }
+next; inline
+
+code hwnd@   
+    0 1 in/out
+	mov dword { $-4 ebp } eax
+	mov eax dword { $8 ebp }
+next; inline
+
+code wparam@ 
+    0 1 in/out 
+	mov dword { $-4 ebp } eax
+	mov eax dword { ebp }
+next; inline
+
+code lparam@
+     0 1 in/out
+     mov dword { $-4 ebp } eax
+next; inline	 
+
+code discard       
+    4 0 in/out
+    mov     eax { 3 cells ebp }
+next; inline
+
+	
+: .message
+	 ." hwnd: "  
+	 hwnd@ .
+     ." uMsg "
+     umsg@ .
+	 ." wParam "
+	 wparam@  .
+	 ." lParam "
+	 lparam@ .
+	 cr ;
+	
+: test 
+  1 2 3 4 
+  .message ;  
+	
+	
 create app-name ," MoonBugs" 0 ,
 app-name 1+ value app-name
 
@@ -56,72 +104,60 @@ align variable ps 24 cells allot
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
 	 
 	1 +to win-calls
-
-	 ." in "  
-	.s cr
-	
-	hwnd 0 > IF
-		3 pick hwnd = not IF 
-		." not my window! " 
-		THEN
-	THEN
-	cr
-	
-	2 pick ( uMsg )  WM_NCCREATE = IF
-		4drop TRUE EXIT 
+    
+	.message
+	 
+	umsg@ WM_NCCREATE = IF
+		discard TRUE EXIT 
 	THEN
 	
-	2 pick ( uMsg )  WM_CREATE = IF
-		4drop  0 
+	umsg@  WM_CREATE = IF
+		discard  0 
 		EXIT 
 	THEN
 
-	2 pick ( uMsg ) WM_DESTROY = IF
+	umsg@ WM_DESTROY = IF
 		0 PostQuitMessage
-		4drop 0 EXIT 
+		discard 0 EXIT 
 	THEN
 	
-	2 pick ( uMsg ) WM_PAINT = IF
-		4drop 
-		." paint begin "  
-		ps hwnd call BeginPaint to hdc
+	umsg@ WM_PAINT = IF
 	
-		rect hwnd call GetClientRect drop 
+		." paint begin "  
+		hwnd@  ps swap call BeginPaint to hdc
+	
+		hwnd@ rect swap call GetClientRect drop 
 		
 		COLOR_WINDOWFRAME  1 +  rect hdc call FillRect drop
 		
-		
-		ps hwnd call EndPaint drop
+		hwnd@ ps swap call EndPaint drop
 		
 		." end "
 		.s cr 
-		0 EXIT 
+		discard 0 EXIT 
+		
 	THEN  
 		
-	2 pick ( uMsg )  WM_SETCURSOR = IF
-		4drop 
+	umsg@ WM_SETCURSOR = IF
+		discard 
 		TRUE
 		EXIT 
 	THEN	
 		
-	2 pick ( uMsg )  WM_NCHITTEST = IF
+	umsg@ WM_NCHITTEST = IF
 		." hit x y "
-		dup lowword .
-		dup hiword .
+		lparam@ lowword .
+		lparam@ hiword .
+		.message
 		cr
 		call DefWindowProcA
 		EXIT
 	THEN	
 			
- 
- 	." defproc" .s
+ 	." defproc " .message
 	call DefWindowProcA
-	." -- " .s cr 
-	EXIT
  
-
-	
-;
+	EXIT ;
  
 
 	
