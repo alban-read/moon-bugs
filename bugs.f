@@ -87,18 +87,12 @@ code discard
     mov     eax { 3 cells ebp }
 next; inline
 
- : .message
-	hex
-	 ." hwnd: "  
-	 hwnd@ .
-     ." uMsg "
-     umsg@ .
-	 ." wParam "
-	 wparam@  .
-	 ." lParam "
-	 lparam@ .
-	 cr
-	decimal	 ;
+ : .message hex
+   ." hwnd: "  hwnd@ .
+   ." uMsg " umsg@ .
+   ." wParam "wparam@  .
+   ." lParam "lparam@ .
+    cr decimal	 ;
 	
 : return_handled  \ FORTH handled it
   discard 4444 
