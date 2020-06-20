@@ -45,6 +45,8 @@ library WINSHIM.dll
 2 import: GetDeviceCaps   
 2 import: GetClientRect
 2 import: SetCaretPos
+3 import: SetWindowLongA 
+2 import: GetWindowLongA
 
 code hiword   
 	shr eax #16      
@@ -55,123 +57,88 @@ code lowword
 	and eax $FFFF
 next; inline
 				
-\ message access
-\ ( hwnd uMsg wParam lParam )
-\    
+				
+4444 constant forth_handled 
+0000 constant windows_handles 
 
-code umsg@   
-    0 1 in/out
-	mov dword { $-4 ebp } eax
-	mov eax dword { $4 ebp }
-next; inline
-
-code hwnd@   
-    0 1 in/out
-	mov dword { $-4 ebp } eax
-	mov eax dword { $8 ebp }
-next; inline
-
-code wparam@ 
-    0 1 in/out 
-	mov dword { $-4 ebp } eax
-	mov eax dword { ebp }
-next; inline
-
-code lparam@
-     0 1 in/out
-     mov dword { $-4 ebp } eax
-next; inline	 
-
-code discard       
-    4 0 in/out
-    mov     eax { 3 cells ebp }
-next; inline
-
- : .message hex
-   ." hwnd: "  hwnd@ .
-   ." uMsg " umsg@ .
-   ." wParam "wparam@  .
-   ." lParam "lparam@ .
-    cr decimal	 ;
+4 callback: MyWndProc  {: hwnd uMsg wParam lParam | hdc _ps _rect -- exit :}
 	
-: return_handled  \ FORTH handled it
-  discard 4444 
-  postpone unnest  ; inline
-  
-: windows_default \ windows can handle
-  discard 0
-  postpone unnest  ; inline	
+	." hwnd " hwnd . ."  msg " uMsg . ."  wParam " wParam . ."  lParam " lParam . cr
 	
-
-0 value win-calls
-0 value hwnd 8 cells allot
-0 value hdc 8 cells allot
-
-align variable rect   	8 cells allot
-align variable brush 	8 cells allot
-align variable AMSG 	24 cells allot
-align variable ps 	24 cells allot
-
-
-4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
-	 
-	1 +to win-calls
-    
-	.message
+	uMsg WM_NCCREATE = IF
+		 windows_handles  EXIT
+	THEN
 	
-	umsg@ WM_PAINT = IF
+	uMsg WM_CREATE = IF
+		 forth_handled EXIT 
+	THEN
+	
+	uMsg WM_DESTROY = IF
+		0 Call PostQuitMessage
+		forth_handled EXIT
+	THEN
+	
+	uMsg WM_PAINT = IF
 		." paint" cr
-		hwnd@ ps swap call BeginPaint to hdc
-		hwnd@ rect swap call GetClientRect drop 
-		-10 -10 rect call InflateRect drop
-		COLOR_MENUTEXT 1 +  rect hdc call FillRect drop
-		hwnd@ ps swap call EndPaint drop
-		return_handled
+		8 cells malloc to _ps 
+		8 cells malloc to _rect 
+		_ps hwnd call BeginPaint to hdc
+		_rect hwnd call GetClientRect drop 
+		-10 -10 _rect call InflateRect drop
+		COLOR_MENUTEXT 1 +  _rect hdc call FillRect drop
+		_ps hwnd call EndPaint drop
+		_ps free
+		_rect free
+		 forth_handled EXIT
 	THEN  
 		
-	umsg@ WM_NCHITTEST = IF
+	uMsg WM_NCHITTEST = IF
 		." x y " 
-		lparam@ lowword .
-		lparam@ hiword .
+		lParam lowword .
+		lParam hiword .
 		cr
-		windows_default
+		windows_handles  EXIT
 	THEN	
 				
-	umsg@ WM_KEYDOWN = IF
-		wparam@ VK_LEFT = IF
+	uMsg WM_KEYDOWN = IF
+		wParam VK_CONTROL = IF
+	 	." hwnd " hwnd . ." msg " uMsg . ." wParam" wParam . ." lParam" lParam . cr
+		THEN
+		wParam VK_LEFT = IF
 			." left"
 		THEN
-		wparam@ VK_RIGHT = IF
+		wParam VK_RIGHT = IF
 			." right"
 		THEN
-		wparam@ VK_SPACE = IF
-			.message
+		wParam VK_SPACE = IF
 			." fire"
 		THEN
-		wparam@ VK_ESCAPE = IF
-			hwnd@ CloseWindow drop
-			return_handled
+		wParam VK_ESCAPE = IF
+			hwnd CloseWindow drop
+			forth_handled EXIT
 		THEN
 	THEN	
  			
-	0 ;
+	windows_handles EXIT ;
  
 variable tid
 variable thread-param
 
  
-: poll-loop   
- 
-	400 600 10 10 ['] MyWndProc make_window to hwnd
-	z" Moon-Bugs " hwnd SetWindowTextA drop
-	SW_SHOW hwnd ShowWindow 
+: poll-loop   {: | window-handle _MSG -- :}
+
+	8 cells malloc to _MSG
+	400 600 10 10 ['] MyWndProc make_window to window-handle
+
+	z" Moon-Bugs " window-handle SetWindowTextA drop
+	SW_SHOW window-handle ShowWindow 
 	
 	BEGIN
 		BEGIN
-		0 0 0 AMSG Call GetMessageA 
-		dup -1 = IF ." poll error" cr THEN
-		0 >  WHILE 
-			AMSG call DispatchMessage drop
+		0 0 window-handle _MSG Call GetMessageA 
+		dup -1 = IF ." poll error!" cr THEN
+		0 > WHILE 
+			_MSG call DispatchMessage drop
 		REPEAT 
 	AGAIN ;
 	
@@ -179,6 +146,7 @@ variable thread-param
 		init-sub-thread 
 		poll-loop   
 	;
+	
 	
 : start 
 	tid 0 thread-param ['] poll-loop-thread  0 0 call CreateThread drop 
