@@ -1,5 +1,8 @@
 
-library WinUser
+
+library WINSHIM.dll
+5 import: make_window
+
 4 import: MessageBoxA
 0 import: GetModuleHandle
 12 import: CreateWindowExA
@@ -7,7 +10,7 @@ library WinUser
 0 import: GetLastError 
 4 import: DefWindowProcA
 4 import: GetMessageA
-5 import: GetMessageA
+5 import: PeekMessageA
 1 import: TranslateMessage
 1 import: DispatchMessage
 2 import: ShowWindow
@@ -17,12 +20,32 @@ library WinUser
 1 import: PostQuitMessage
 2 import: BeginPaint
 2 import: EndPaint
+2 import: LoadCursor
 3 import: FillRect
+3 import: InflateRect
 1 import: SetActiveWindow
 1 import: GetStockObject
+1 import: DestroyWindow
+1 import: CloseWindow
+1 import: GetAsyncKeyState
+1 import: CreateCompatibleDC 
+1 import: CreateCompatibleBitmap 
+2 import: SetWindowTextA   
+2 import: SelectObject 
+9 import: BitBlt 
+1 import: DeleteObject 
+1 import: DeleteDC 
+3 import: CreateMutex 
+1 import: CreatePalette 
+1 import: IsGUIThread
+0 import: DestroyCaret
+1 import: ShowCaret
+4 import: CreateCaret 
+4 import: CreateDC 
+2 import: GetDeviceCaps   
 2 import: GetClientRect
-		
- 		
+2 import: SetCaretPos
+
 code hiword   
 	shr eax #16      
 	and eax $FFFF
@@ -64,8 +87,8 @@ code discard
     mov     eax { 3 cells ebp }
 next; inline
 
-	
-: .message
+ : .message
+	hex
 	 ." hwnd: "  
 	 hwnd@ .
      ." uMsg "
@@ -74,31 +97,26 @@ next; inline
 	 wparam@  .
 	 ." lParam "
 	 lparam@ .
-	 cr ;
+	 cr
+	decimal	 ;
 	
-: test 
-  1 2 3 4 
-  .message ;  
+: return_handled  \ FORTH handled it
+  discard 4444 
+  postpone unnest  ; inline
+  
+: windows_default \ windows can handle
+  discard 0
+  postpone unnest  ; inline	
 	
-	
-create app-name ," MoonBugs" 0 ,
-app-name 1+ value app-name
 
-create app-title ," Moon Bugs" 0 ,
-app-title 1+ value app-title
-
-0 call GetModuleHandle value hmod  
-8 cells allot
 0 value win-calls
 0 value hwnd 8 cells allot
 0 value hdc 8 cells allot
-align variable rect   8 cells allot
-align variable brush 8 cells allot
-align variable MSG 24 cells allot
-align variable ps 24 cells allot
-0 value lresult 8 cells allot
 
-: for-us? MSG @ hwnd = ;
+align variable rect   	8 cells allot
+align variable brush 	8 cells allot
+align variable AMSG 	24 cells allot
+align variable ps 	24 cells allot
 
 
 4 callback: MyWndProc  ( hwnd uMsg wParam lParam )
@@ -106,56 +124,26 @@ align variable ps 24 cells allot
 	1 +to win-calls
     
 	.message
-	 
-	umsg@ WM_NCCREATE = IF
-		discard TRUE EXIT 
-	THEN
-	
-	umsg@  WM_CREATE = IF
-		discard  0 
-		EXIT 
-	THEN
-
-	umsg@ WM_DESTROY = IF
-		0 PostQuitMessage
-		discard 0 EXIT 
-	THEN
 	
 	umsg@ WM_PAINT = IF
-	
-		." paint begin "  
-		hwnd@  ps swap call BeginPaint to hdc
-	
+		." paint" cr
+		hwnd@ ps swap call BeginPaint to hdc
 		hwnd@ rect swap call GetClientRect drop 
-		
-		COLOR_WINDOWFRAME  1 +  rect hdc call FillRect drop
-		
+		-10 -10 rect call InflateRect drop
+		COLOR_MENUTEXT 1 +  rect hdc call FillRect drop
 		hwnd@ ps swap call EndPaint drop
-		
-		." end "
-		.s cr 
-		discard 0 EXIT 
-		
+		return_handled
 	THEN  
 		
-	umsg@ WM_SETCURSOR = IF
-		discard 
-		TRUE
-		EXIT 
-	THEN	
-		
 	umsg@ WM_NCHITTEST = IF
-		." hit x y "
+		." x y " 
 		lparam@ lowword .
 		lparam@ hiword .
-		.message
 		cr
-		call DefWindowProcA
-		EXIT
+		windows_default
 	THEN	
-	
+				
 	umsg@ WM_KEYDOWN = IF
-		." keys "
 		wparam@ VK_LEFT = IF
 			." left"
 		THEN
@@ -163,80 +151,43 @@ align variable ps 24 cells allot
 			." right"
 		THEN
 		wparam@ VK_SPACE = IF
+			.message
 			." fire"
 		THEN
 		wparam@ VK_ESCAPE = IF
-			." end"
-			hwnd@ CloseWindow
-			discard
-			0 EXIT
+			hwnd@ CloseWindow drop
+			return_handled
 		THEN
-		call DefWindowProcA 
-		EXIT 
-	THEN			
- 	." defproc " .message
-	call DefWindowProcA
- 
-	EXIT ;
- 
-
-	
-align 
-create wind-class
- 0 ,  
- ' MyWndProc , 	 
- 0 , 			 
- 0 , 			 
- hmod , 		 
- 0 , 			 
- 0 , 			 
- COLOR_WINDOW 1 + , 	 
- 0 , 			 
- app-name , 		 
- 0 ,
- 0 ,
- 
-
-: register-class
-	 wind-class call RegisterClassA ;
-
-
-: make-window
- 0 hmod 0 0  
- CW_USEDEFAULT CW_USEDEFAULT		
- CW_USEDEFAULT CW_USEDEFAULT 
- WS_OVERLAPPEDWINDOW  app-title app-name 0 call CreateWindowExA
-;
-
-
- 
-hex
+	THEN	
+ 			
+	0 ;
  
 variable tid
 variable thread-param
 
  
 : poll-loop   
-
-	init-thread 
-	register-class drop
-	make-window to hwnd
-	SW_SHOWDEFAULT hwnd call ShowWindow drop
+ 
+	400 600 10 10 ['] MyWndProc make_window to hwnd
+	z" Moon-Bugs " hwnd SetWindowTextA drop
+	SW_SHOW hwnd ShowWindow 
+	
 	BEGIN
-		." poll loop" cr
-		10 Sleep
 		BEGIN
-		0 0 hwnd MSG Call GetMessageA 
+		0 0 0 AMSG Call GetMessageA 
 		dup -1 = IF ." poll error" cr THEN
 		0 >  WHILE 
-			MSG call DispatchMessage drop
+			AMSG call DispatchMessage drop
 		REPEAT 
 	AGAIN ;
 	
+	: poll-loop-thread   
+		init-sub-thread 
+		poll-loop   
+	;
+	
 : start 
-	tid 0 thread-param ['] poll-loop 0 0 call CreateThread drop ;
+	tid 0 thread-param ['] poll-loop-thread  0 0 call CreateThread drop 
+;
 
  
-
-
-
