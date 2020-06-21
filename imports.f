@@ -1,5 +1,6 @@
 library WinUser
   
+ 4 import: SetTimer
  4 import: MessageBoxA
  0 import: GetModuleHandle
 12 import: CreateWindowExA
