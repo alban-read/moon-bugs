@@ -1,50 +1,5 @@
 
-
-library WinUser
- 
-4 import: MessageBoxA
-0 import: GetModuleHandle
-12 import: CreateWindowExA
-1 import: RegisterClassA
-0 import: GetLastError 
-4 import: DefWindowProcA
-4 import: GetMessageA
-5 import: PeekMessageA
-1 import: TranslateMessage
-1 import: DispatchMessage
-2 import: ShowWindow
-1 import: Sleep
-6 import: CreateThread
-1 import: UpdateWindow
-1 import: PostQuitMessage
-2 import: BeginPaint
-2 import: EndPaint
-2 import: LoadCursor
-3 import: FillRect
-3 import: InflateRect
-1 import: SetActiveWindow
-1 import: GetStockObject
-1 import: DestroyWindow
-1 import: CloseWindow
-1 import: GetAsyncKeyState
-1 import: CreateCompatibleDC 
-1 import: CreateCompatibleBitmap 
-2 import: SelectObject 
-9 import: BitBlt 
-1 import: DeleteObject 
-1 import: DeleteDC 
-3 import: CreateMutex 
-1 import: CreatePalette 
-1 import: IsGUIThread
-0 import: DestroyCaret
-1 import: ShowCaret
-1 import: SetWindowTextA
-4 import: CreateCaret 
-4 import: CreateDC 
-2 import: GetDeviceCaps   
-2 import: GetClientRect
-2 import: SetCaretPos
-
+include imports.f 
 
 code hiword   
 	shr eax #16      
@@ -61,65 +16,75 @@ next; inline
  
 
 4 callback: MyWndProc  {: hwnd uMsg wParam lParam | hdc _ps _rect  -- exit :}
-	
-	uMsg WM_CREATE = IF
-		forth_handled EXIT
-	THEN
-	
-	uMsg WM_DESTROY = IF
-		0 Call PostQuitMessage
-		forth_handled EXIT
-	THEN
-	
-	uMsg WM_PAINT = IF
-		." paint" cr
-		8 cells malloc to _ps 
-		8 cells malloc to _rect 
-		_ps hwnd call BeginPaint to hdc
-		_rect hwnd call GetClientRect drop 
-		-10 -10 _rect call InflateRect drop
-		COLOR_MENUTEXT 1 +  _rect hdc call FillRect drop
-		_ps hwnd call EndPaint drop
-		_ps free
-		_rect free
-		 forth_handled EXIT
-	THEN  
+
+
+	uMsg CASE 
 		
-	uMsg WM_NCHITTEST = IF
-		." x y " 
-		lParam lowword .
-		lParam hiword .
-		cr
-	THEN	
-				
-	uMsg WM_KEYDOWN = IF
-	
-		wParam VK_CONTROL = IF
-	 	  tracking not to tracking
-		THEN
-		
-		wParam VK_LEFT = IF
-			." left"
-		THEN
-		wParam VK_RIGHT = IF
-			." right"
-		THEN
-		wParam VK_SPACE = IF
-			." fire"
-		THEN
-		wParam VK_ESCAPE = IF
-			hwnd CloseWindow drop
+		WM_CREATE OF
 			forth_handled EXIT
-		THEN
-	THEN	
-    
+		ENDOF 
+		
+		WM_DESTROY OF
+			0 Call PostQuitMessage
+			forth_handled EXIT
+		ENDOF
+		
+		WM_PAINT OF
+			8 cells malloc to _ps 
+			8 cells malloc to _rect 
+			_ps hwnd call BeginPaint to hdc
+			_rect hwnd call GetClientRect drop 
+			-10 -10 _rect call InflateRect drop
+			COLOR_MENUTEXT 1 +  _rect hdc call FillRect drop
+			_ps hwnd call EndPaint drop
+			_ps free
+			_rect free
+			 forth_handled EXIT
+		ENDOF  
+			
+		WM_NCHITTEST OF
+			lParam lowword .
+			lParam hiword . cr
+		ENDOF	
+					
+		WM_KEYDOWN OF
+		
+			wParam CASE
+		
+				VK_CONTROL OF
+				  tracking not to tracking
+				ENDOF
+				
+				VK_LEFT OF
+			 
+				ENDOF
+				
+				VK_RIGHT OF
+				 
+				ENDOF
+				
+				VK_SPACE OF
+				 
+				ENDOF
+				
+				VK_ESCAPE OF
+					hwnd CloseWindow drop
+					forth_handled EXIT
+				ENDOF
+				
+			ENDCASE
+
+		ENDOF	
+
+	ENDCASE
+
 	tracking -1 = IF
 		." message - " ." hwnd: " hwnd . 
 		." msg: " uMsg . 
 		." wParam: " wParam . 
 		." lParam: " lParam . cr	
 	 THEN
-	
+
 	lParam wParam uMsg hwnd cr call DefWindowProcA  
  ;
  
@@ -137,15 +102,16 @@ create wind-class
  app-name , 0 , 0 ,
  
 : register-class
-	 wind-class call RegisterClassA ;
+	wind-class call RegisterClassA ;
 
 : make-window
- 0 hmod 0 0  
- CW_USEDEFAULT CW_USEDEFAULT		
- CW_USEDEFAULT CW_USEDEFAULT 
- WS_OVERLAPPED WS_BORDER + WS_SYSMENU + WS_MINIMIZEBOX + WS_VISIBLE +
- app-title app-name 0 call CreateWindowExA 
-;
+	0 hmod 0 0  
+	CW_USEDEFAULT CW_USEDEFAULT		
+	CW_USEDEFAULT CW_USEDEFAULT 
+	WS_OVERLAPPED 
+	WS_BORDER + WS_SYSMENU + WS_MINIMIZEBOX + WS_VISIBLE +
+	app-title app-name 0 call CreateWindowExA 
+	;
 
 variable tid
 variable thread-param
@@ -159,7 +125,7 @@ variable thread-param
 	." handle: "  window-handle . cr
 	app-name window-handle SetWindowTextA drop
 	SW_SHOW window-handle ShowWindow 
-	
+
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 
@@ -170,13 +136,14 @@ variable thread-param
 	AGAIN ;
 	
 	
-	: poll-loop-thread   
-		init-thread 
-		100 Sleep
-		poll-loop   
-	;
-	
+: poll-loop-thread   
+	init-thread 
+	100 Sleep
+	poll-loop   
+;
+
 : start 
-	tid 0 thread-param ['] poll-loop-thread  0 0 call CreateThread drop ;
+	tid 0 thread-param ['] poll-loop-thread  
+	0 0 call CreateThread drop ;
 
  
