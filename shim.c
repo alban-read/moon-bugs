@@ -1,4 +1,5 @@
 // SHIM for forth to create window 
+// IS NOT USED.
 
 #include "framework.h"
 #include <windows.h>
