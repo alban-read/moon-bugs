@@ -1,8 +1,7 @@
 
 
-library WINSHIM.dll
-5 import: make_window
-
+library WinUser
+ 
 4 import: MessageBoxA
 0 import: GetModuleHandle
 12 import: CreateWindowExA
@@ -30,7 +29,6 @@ library WINSHIM.dll
 1 import: GetAsyncKeyState
 1 import: CreateCompatibleDC 
 1 import: CreateCompatibleBitmap 
-2 import: SetWindowTextA   
 2 import: SelectObject 
 9 import: BitBlt 
 1 import: DeleteObject 
@@ -40,13 +38,13 @@ library WINSHIM.dll
 1 import: IsGUIThread
 0 import: DestroyCaret
 1 import: ShowCaret
+1 import: SetWindowTextA
 4 import: CreateCaret 
 4 import: CreateDC 
 2 import: GetDeviceCaps   
 2 import: GetClientRect
 2 import: SetCaretPos
-3 import: SetWindowLongA 
-2 import: GetWindowLongA
+
 
 code hiword   
 	shr eax #16      
@@ -57,20 +55,15 @@ code lowword
 	and eax $FFFF
 next; inline
 				
-				
-4444 constant forth_handled 
-0000 constant windows_handles 
+ 		
+0 constant forth_handled 
+0 value tracking
+ 
 
-4 callback: MyWndProc  {: hwnd uMsg wParam lParam | hdc _ps _rect -- exit :}
-	
-	." hwnd " hwnd . ."  msg " uMsg . ."  wParam " wParam . ."  lParam " lParam . cr
-	
-	uMsg WM_NCCREATE = IF
-		 windows_handles  EXIT
-	THEN
+4 callback: MyWndProc  {: hwnd uMsg wParam lParam | hdc _ps _rect  -- exit :}
 	
 	uMsg WM_CREATE = IF
-		 forth_handled EXIT 
+		forth_handled EXIT
 	THEN
 	
 	uMsg WM_DESTROY = IF
@@ -97,13 +90,14 @@ next; inline
 		lParam lowword .
 		lParam hiword .
 		cr
-		windows_handles  EXIT
 	THEN	
 				
 	uMsg WM_KEYDOWN = IF
+	
 		wParam VK_CONTROL = IF
-	 	." hwnd " hwnd . ." msg " uMsg . ." wParam" wParam . ." lParam" lParam . cr
+	 	  tracking not to tracking
 		THEN
+		
 		wParam VK_LEFT = IF
 			." left"
 		THEN
@@ -118,19 +112,52 @@ next; inline
 			forth_handled EXIT
 		THEN
 	THEN	
- 			
-	windows_handles EXIT ;
+    
+	tracking -1 = IF
+		." message - " ." hwnd: " hwnd . 
+		." msg: " uMsg . 
+		." wParam: " wParam . 
+		." lParam: " lParam . cr	
+	 THEN
+	
+	lParam wParam uMsg hwnd cr call DefWindowProcA  
+ ;
  
+
+create app-name ," !Moon-Bugs " 0 , 0 ,  
+app-name 1+ value app-name
+app-name 1+ value app-title
+
+0 call GetModuleHandle value hmod  
+
+align 
+create wind-class
+ 0 , ' MyWndProc ,  0 ,  0 ,  hmod , 		 
+ 0 ,  0 , COLOR_WINDOW 1 + ,  0 ,  
+ app-name , 0 , 0 ,
+ 
+: register-class
+	 wind-class call RegisterClassA ;
+
+: make-window
+ 0 hmod 0 0  
+ CW_USEDEFAULT CW_USEDEFAULT		
+ CW_USEDEFAULT CW_USEDEFAULT 
+ WS_OVERLAPPED WS_BORDER + WS_SYSMENU + WS_MINIMIZEBOX + WS_VISIBLE +
+ app-title app-name 0 call CreateWindowExA 
+;
+
 variable tid
 variable thread-param
-
- 
+	
 : poll-loop   {: | window-handle _MSG -- :}
 
+	." message loop " cr
+	register-class drop
 	8 cells malloc to _MSG
-	400 600 10 10 ['] MyWndProc make_window to window-handle
-
-	z" Moon-Bugs " window-handle SetWindowTextA drop
+	make-window to window-handle
+	." handle: "  window-handle . cr
+	app-name window-handle SetWindowTextA drop
 	SW_SHOW window-handle ShowWindow 
 	
 	BEGIN
@@ -142,14 +169,14 @@ variable thread-param
 		REPEAT 
 	AGAIN ;
 	
+	
 	: poll-loop-thread   
-		init-sub-thread 
+		init-thread 
+		100 Sleep
 		poll-loop   
 	;
 	
-	
 : start 
-	tid 0 thread-param ['] poll-loop-thread  0 0 call CreateThread drop 
-;
+	tid 0 thread-param ['] poll-loop-thread  0 0 call CreateThread drop ;
 
  
