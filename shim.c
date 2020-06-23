@@ -1,3 +1,4 @@
+// GDI PLUS shim; arguments aligned for FORTH
 
 #include <windows.h>
 #include <gdiplus.h>
@@ -6,6 +7,7 @@
 #include <string.h>
 #include <codecvt>
 #include <locale>
+
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -49,35 +51,35 @@ __declspec(dllexport) int _graphics_mode;
 
 ULONG_PTR           gdiplusToken;
 
-extern "C" __declspec(dllexport)  void gdiplus_init() {
+extern "C" __declspec(dllexport)  void __stdcall gdiplus_init() {
 	GdiplusStartupInput gdiplusStartupInput;
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 }
 
-extern "C" __declspec(dllexport)  void* get_surface() {
+extern "C" __declspec(dllexport)  void* __stdcall get_surface() {
 	return image_surface;
 }
 
 
-extern "C" __declspec(dllexport) ptr QUALITYHIGH()
+extern "C" __declspec(dllexport) ptr  __stdcall __stdcall QUALITYHIGH()
 {
 	quality_mode = Gdiplus::SmoothingModeHighQuality;
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr QUALITYFAST()
+extern "C" __declspec(dllexport) ptr  __stdcall QUALITYFAST()
 {
 	quality_mode = Gdiplus::SmoothingModeHighSpeed;
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr QUALITYANTIALIAS()
+extern "C" __declspec(dllexport) ptr  __stdcall QUALITYANTIALIAS()
 {
 	quality_mode = Gdiplus::SmoothingModeAntiAlias;
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXRESET()
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXRESET()
 {
 	if (transform_matrix == nullptr)
 	{
@@ -87,7 +89,7 @@ extern "C" __declspec(dllexport) ptr MATRIXRESET()
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXINVERT()
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXINVERT()
 {
 	if (transform_matrix == nullptr)
 	{
@@ -97,7 +99,7 @@ extern "C" __declspec(dllexport) ptr MATRIXINVERT()
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXROTATEAT(int x, int y, int angle)
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXROTATEAT(int angle, int x, int y )
 {
 	if (transform_matrix == nullptr)
 	{
@@ -107,7 +109,7 @@ extern "C" __declspec(dllexport) ptr MATRIXROTATEAT(int x, int y, int angle)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXROTATE(int angle)
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXROTATE(int angle)
 {
 	if (transform_matrix == nullptr)
 	{
@@ -117,33 +119,33 @@ extern "C" __declspec(dllexport) ptr MATRIXROTATE(int angle)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXSHEAR(float x, float y)
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXSHEAR(int y, int x)
 {
 	if (transform_matrix == nullptr)
 	{
 		transform_matrix = new Gdiplus::Matrix();
 	}
-	transform_matrix->Shear(x, y);
+	transform_matrix->Shear(x*0.1, y*0.1);
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXSCALE(float x, float y)
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXSCALE(int y, int x)
 {
 	if (transform_matrix == nullptr)
 	{
 		transform_matrix = new Gdiplus::Matrix();
 	}
-	transform_matrix->Scale(x, y);
+	transform_matrix->Scale(x*0.1, y*0.1);
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr MATRIXTRANSLATE(float x, float y)
+extern "C" __declspec(dllexport) ptr  __stdcall MATRIXTRANSLATE(int y, int x)
 {
 	if (transform_matrix == nullptr)
 	{
 		transform_matrix = new Gdiplus::Matrix();
 	}
-	transform_matrix->Translate(x, y);
+	transform_matrix->Translate(x*0.1, y*0.1);
 	return Strue;
 }
 
@@ -170,7 +172,7 @@ int GetEncoderClsid(WCHAR* format, CLSID* pClsid)
 	return -1;
 }
 
-Gdiplus::Bitmap* ResizeClone(Bitmap* bmp, INT width, INT height)
+Gdiplus::Bitmap* ResizeClone( INT height, INT width, Bitmap* bmp )
 {
 	UINT o_height = bmp->GetHeight();
 	UINT o_width = bmp->GetWidth();
@@ -225,7 +227,7 @@ Gdiplus::Status HBitmapToBitmap(HBITMAP source, Gdiplus::PixelFormat pixel_forma
 	return Gdiplus::Ok;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWSTRING(int x, int y, char* text)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWSTRING(char* text, int y, int x)
 {
 
 	std::wstring draw_text = widen(text);
@@ -246,7 +248,7 @@ extern "C" __declspec(dllexport) ptr DRAWSTRING(int x, int y, char* text)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWGRADIENTSTRING(int x, int y, char* text)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWGRADIENTSTRING(char* text, int y, int x)
 {
 
 	std::wstring draw_text = widen(text);
@@ -267,7 +269,7 @@ extern "C" __declspec(dllexport) ptr DRAWGRADIENTSTRING(int x, int y, char* text
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SAVEASPNG(char* fname)
+extern "C" __declspec(dllexport) ptr  __stdcall SAVEASPNG(char* fname)
 {
 
 	std::wstring file_name = widen(fname);
@@ -283,7 +285,7 @@ extern "C" __declspec(dllexport) ptr SAVEASPNG(char* fname)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SAVEASJPEG(char* fname)
+extern "C" __declspec(dllexport) ptr  __stdcall SAVEASJPEG(char* fname)
 {
 
 	std::wstring file_name = widen(fname);
@@ -304,7 +306,7 @@ extern "C" __declspec(dllexport) ptr SAVEASJPEG(char* fname)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SAVETOCLIPBOARD(char* fname)
+extern "C" __declspec(dllexport) ptr  __stdcall SAVETOCLIPBOARD(char* fname)
 {
 
 	if (!OpenClipboard(NULL))
@@ -340,7 +342,7 @@ extern "C" __declspec(dllexport) ptr SAVETOCLIPBOARD(char* fname)
 	return Snil;
 }
 
-extern "C" __declspec(dllexport) ptr FLIP(int d)
+extern "C" __declspec(dllexport) ptr  __stdcall FLIP(int d)
 {
 	if (image_surface == nullptr)
 	{
@@ -350,7 +352,7 @@ extern "C" __declspec(dllexport) ptr FLIP(int d)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SETPIXEL(int x, int y)
+extern "C" __declspec(dllexport) ptr  __stdcall SETPIXEL(int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -360,7 +362,7 @@ extern "C" __declspec(dllexport) ptr SETPIXEL(int x, int y)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DISPLAY(int x, int y, HDC h )
+extern "C" __declspec(dllexport) ptr  __stdcall DISPLAY(HDC h, int y, int x )
 {
 	if (image_surface == nullptr)
 	{
@@ -371,7 +373,7 @@ extern "C" __declspec(dllexport) ptr DISPLAY(int x, int y, HDC h )
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr IMAGETOSURFACE(int x, int y, Image* image)
+extern "C" __declspec(dllexport) ptr  __stdcall IMAGETOSURFACE(Image* image, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -383,7 +385,7 @@ extern "C" __declspec(dllexport) ptr IMAGETOSURFACE(int x, int y, Image* image)
 }
 
 
-extern "C" __declspec(dllexport) ptr LOADTOSURFACE(int x, int y, char* filename)
+extern "C" __declspec(dllexport) ptr  __stdcall LOADTOSURFACE(char* filename, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -395,17 +397,9 @@ extern "C" __declspec(dllexport) ptr LOADTOSURFACE(int x, int y, char* filename)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr RSETPIXEL(REAL x, REAL y)
-{
-	if (image_surface == nullptr)
-	{
-		return Snil;
-	}
-	image_surface->SetPixel(x, y, foreground_colour);
-	return Strue;
-}
 
-extern "C" __declspec(dllexport) ptr FILLSOLIDRECT(int x, int y, int w, int h)
+
+extern "C" __declspec(dllexport) ptr  __stdcall FILLSOLIDRECT(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -424,26 +418,7 @@ extern "C" __declspec(dllexport) ptr FILLSOLIDRECT(int x, int y, int w, int h)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr REALFILLSOLIDRECT(REAL x, REAL y, REAL w, REAL h)
-{
-	if (image_surface == nullptr)
-	{
-		return Snil;
-	}
-	if (solid_brush == nullptr)
-	{
-		solid_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 0, 0, 0));
-	}
-	Gdiplus::Pen pen(foreground_colour, _pen_width);
-	Graphics g2(image_surface);
-	g2.SetClip(ClipRegion, CombineModeReplace);
-	g2.SetSmoothingMode(quality_mode);
-	g2.SetTransform(transform_matrix);
-	g2.FillRectangle(solid_brush, x, y, w, h);
-	return Strue;
-}
-
-extern "C" __declspec(dllexport) ptr FILLGRADIENTRECT(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLGRADIENTRECT(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -462,7 +437,7 @@ extern "C" __declspec(dllexport) ptr FILLGRADIENTRECT(int x, int y, int w, int h
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLHATCHRECT(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLHATCHRECT(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -481,7 +456,7 @@ extern "C" __declspec(dllexport) ptr FILLHATCHRECT(int x, int y, int w, int h)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLSOLIDELLIPSE(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLSOLIDELLIPSE(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -500,7 +475,7 @@ extern "C" __declspec(dllexport) ptr FILLSOLIDELLIPSE(int x, int y, int w, int h
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLGRADIENTELLIPSE(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLGRADIENTELLIPSE(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -519,7 +494,7 @@ extern "C" __declspec(dllexport) ptr FILLGRADIENTELLIPSE(int x, int y, int w, in
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLHATCHELLIPSE(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLHATCHELLIPSE(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -538,7 +513,7 @@ extern "C" __declspec(dllexport) ptr FILLHATCHELLIPSE(int x, int y, int w, int h
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLSOLIDPIE(int x, int y, int w, int h, int i, int j)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLSOLIDPIE(int j, int i, int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -557,7 +532,7 @@ extern "C" __declspec(dllexport) ptr FILLSOLIDPIE(int x, int y, int w, int h, in
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLGRADIENTPIE(int x, int y, int w, int h, int i, int j)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLGRADIENTPIE(int j, int i, int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -576,7 +551,7 @@ extern "C" __declspec(dllexport) ptr FILLGRADIENTPIE(int x, int y, int w, int h,
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr FILLHATCHPIE(int x, int y, int w, int h, int i, int j)
+extern "C" __declspec(dllexport) ptr  __stdcall FILLHATCHPIE(int j, int i, int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -594,7 +569,7 @@ extern "C" __declspec(dllexport) ptr FILLHATCHPIE(int x, int y, int w, int h, in
 	g2.FillPie(hatch_brush, x, y, w, h, i, j);
 	return Strue;
 }
-extern "C" __declspec(dllexport) ptr DRAWRECT(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWRECT(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -609,7 +584,7 @@ extern "C" __declspec(dllexport) ptr DRAWRECT(int x, int y, int w, int h)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWARC(int x, int y, int w, int h, int i, int j)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWARC(int j, int i, int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -624,7 +599,7 @@ extern "C" __declspec(dllexport) ptr DRAWARC(int x, int y, int w, int h, int i, 
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWELLIPSE(int x, int y, int w, int h)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWELLIPSE(int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -639,7 +614,7 @@ extern "C" __declspec(dllexport) ptr DRAWELLIPSE(int x, int y, int w, int h)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWPIE(int x, int y, int w, int h, int i, int j)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWPIE(int j, int i, int h, int w, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -654,7 +629,7 @@ extern "C" __declspec(dllexport) ptr DRAWPIE(int x, int y, int w, int h, int i, 
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWLINE(int x, int y, int x0, int y0)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWLINE(int y0, int x0, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -669,7 +644,7 @@ extern "C" __declspec(dllexport) ptr DRAWLINE(int x, int y, int x0, int y0)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr DRAWGRADIENTLINE(int x, int y, int x0, int y0)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWGRADIENTLINE(int y0, int x0, int y, int x)
 {
 	if (image_surface == nullptr)
 	{
@@ -684,25 +659,25 @@ extern "C" __declspec(dllexport) ptr DRAWGRADIENTLINE(int x, int y, int x0, int 
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr PENWIDTH(float w)
+extern "C" __declspec(dllexport) ptr  __stdcall PENWIDTH(int w)
 {
-	_pen_width = w;
+	_pen_width = float(w * 0.1);
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SETFONTSIZE(int w)
+extern "C" __declspec(dllexport) ptr  __stdcall SETFONTSIZE(int w)
 {
 	font_size = w;
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr COLR(int r, int g, int b, int a)
+extern "C" __declspec(dllexport) ptr  __stdcall COLR(int a, int b, int g, int r)
 {
 	foreground_colour = Gdiplus::Color(a, r, g, b);
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr GRADIENTBRUSH(int x, int y, int w, int h, int r, int g, int b, int a, int r0, int g0, int b0, int a0, double angle, bool z)
+extern "C" __declspec(dllexport) ptr  __stdcall GRADIENTBRUSH( int a, int b, int g, int r, int a0, int b0, int g0, int r0, int angle, bool z,  int h, int w, int y, int x )
 {
 	if (gradient_brush != nullptr)
 	{
@@ -712,7 +687,7 @@ extern "C" __declspec(dllexport) ptr GRADIENTBRUSH(int x, int y, int w, int h, i
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr GRADIENTSHAPE(char* type, float focus, float scale)
+extern "C" __declspec(dllexport) ptr  __stdcall GRADIENTSHAPE(int focus, int scale, char *type )
 {
 	if (gradient_brush == nullptr)
 	{
@@ -720,11 +695,11 @@ extern "C" __declspec(dllexport) ptr GRADIENTSHAPE(char* type, float focus, floa
 	}
 	if (strcmp(type, "bell") == 0)
 	{
-		gradient_brush->SetBlendBellShape(focus, scale);
+		gradient_brush->SetBlendBellShape(focus*0.1, scale*0.1);
 	}
 	else if (strcmp(type, "triangular") == 0)
 	{
-		gradient_brush->SetBlendTriangularShape(focus, scale);
+		gradient_brush->SetBlendTriangularShape(focus*0.1, scale*0.1);
 	}
 	else
 	{
@@ -733,7 +708,7 @@ extern "C" __declspec(dllexport) ptr GRADIENTSHAPE(char* type, float focus, floa
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SOLIDBRUSH(int r, int g, int b, int a)
+extern "C" __declspec(dllexport) ptr  __stdcall SOLIDBRUSH(int a, int b, int g, int r)
 {
 	if (solid_brush != nullptr)
 	{
@@ -743,7 +718,7 @@ extern "C" __declspec(dllexport) ptr SOLIDBRUSH(int r, int g, int b, int a)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr SETHATCHBRUSH(int style, int r, int g, int b, int a, int r0, int g0, int b0, int a0)
+extern "C" __declspec(dllexport) ptr  __stdcall SETHATCHBRUSH(int a, int b, int g, int r, int a0, int b0, int g0, int r0, int style)
 {
 	if (hatch_brush != nullptr)
 	{
@@ -754,7 +729,7 @@ extern "C" __declspec(dllexport) ptr SETHATCHBRUSH(int style, int r, int g, int 
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr PAPER(int r, int g, int b, int a)
+extern "C" __declspec(dllexport) ptr  __stdcall PAPER(int r, int g, int b, int a)
 {
 	if (paper_brush != nullptr)
 	{
@@ -764,7 +739,7 @@ extern "C" __declspec(dllexport) ptr PAPER(int r, int g, int b, int a)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr CLG(int w, int h)
+extern "C" __declspec(dllexport) ptr __stdcall CLG(int h, int w)
 {
 	if (transform_matrix == nullptr)
 	{
@@ -785,7 +760,7 @@ extern "C" __declspec(dllexport) ptr CLG(int w, int h)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) void* MAKESURFACE(int w, int h)
+extern "C" __declspec(dllexport) void* __stdcall MAKESURFACE(int h, int w)
 {
 	auto new_surface = new Gdiplus::Bitmap(w, h, PixelFormat32bppRGB);
 	Gdiplus::Graphics g2(image_surface);
@@ -793,14 +768,14 @@ extern "C" __declspec(dllexport) void* MAKESURFACE(int w, int h)
 	return(void*)image_surface;
 }
 
-extern "C" __declspec(dllexport) void* LOADIMAGE(char* filename)
+extern "C" __declspec(dllexport) void* __stdcall LOADIMAGE(char* filename)
 {
 	auto new_image = new Image(widen(filename).c_str());
 	return new_image;
 }
 
 
-extern "C" __declspec(dllexport) ptr GRMODE(int m)
+extern "C" __declspec(dllexport) ptr  __stdcall GRMODE(int m)
 {
 	_graphics_mode = m;
 	return Strue;
