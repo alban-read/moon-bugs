@@ -13,6 +13,11 @@
 		
 		WM_TIMER OF
 			ticks 1 + to ticks 
+			
+			clear-graphics 
+			display-gun-ship
+			redisplay 
+			
 			forth_handled EXIT
 		ENDOF 
 
@@ -48,7 +53,7 @@ variable message-thread-param
 	wind-class-message register-class drop
 	8 cells malloc to _MSG
 	make-message-window to window-handle
-	0 500 1000 window-handle SetTimer
+	0 40 1000 window-handle SetTimer
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 

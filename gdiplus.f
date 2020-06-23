@@ -72,8 +72,11 @@ library winshim.dll
 : rotate-matrix-at ( x y a --- )	 
 	 _MATRIXROTATEAT@12 drop ; 
  
+: display ( x y hdc ) 
+		call _DISPLAY@12 drop ;
+
 : load-image ( filename -- image ) 
-		call  _LOADIMAGE@4 ;
+		call  _LOADIMAGE@4  ;
 
 : draw-image ( x y image -- ) 
 		call _IMAGETOSURFACE@12 drop ; 
@@ -146,36 +149,67 @@ gdi-text 1+ value gdi-text
 0 value gdi-plus-surface 
 
 0 value gun-ship-image 
+200 value gun-x
+200 value gun-y
 
- 
- : test 
-	
+
+ : init-graphics
 	init-gdi-plus
 	high-quality
 	500 400 clg  
 	reset-matrix
 	get-gdi-surface to gdi-plus-surface
 	
-	z" HeroSmall.png" load-image to gun-ship-image 
+	;
 
+
+ : init-gun-ship 
+		z" HeroSmall.png" load-image to gun-ship-image ;
+ 
+
+
+: clear-graphics 
+  	800 600 clg  
+	reset-matrix ;
+
+: display-gun-ship
+   gun-x gun-y  
+   gun-ship-image 
+   14 draw-scaled-image
+   20 pen-width  
+   150 250 250 $FF colour  
+   200 200 30 30 draw-rect 
+
+   ;
+ 
+
+
+
+	
+: test 
+	
 	30 30 gun-ship-image draw-image
 	
  
-	150 150 gun-ship-image 20 20 draw-scaled-rotated-image
+	150 150 gun-ship-image 20 draw-scaled-image
 	
-	 
+	50 50 gun-ship-image 450 40 draw-scaled-rotated-image
 	
-	5 5 scale-matrix
-
+	20 2 do 
+	
+		i 10 *  i 10 *  gun-ship-image  i 4 *  i 8 * draw-scaled-rotated-image
+	
+	loop
+	
 	250 10  100 $FF solid-brush   
 	100 100 30 30 fill-rect
 	20 pen-width  
 	150 250 250 $FF colour  
 	200 200 30 30 draw-rect 
 	
-	24 font-size
+	150 250 250 $FF colour  
+	44 font-size
 	
-	200 200 gdi-text draw-string
 	
-	z" test.png" save-as-png 
+	\ z" test.png" save-as-png 
  ;

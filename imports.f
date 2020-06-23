@@ -33,6 +33,7 @@ library WinUser
  1 import: DeleteObject 
  1 import: DeleteDC 
  3 import: CreateMutex 
+ 3 import: InvalidateRect 
  1 import: CreatePalette 
  1 import: IsGUIThread
  0 import: DestroyCaret

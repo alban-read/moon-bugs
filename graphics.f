@@ -5,6 +5,10 @@
 
 	uMsg CASE 
 		
+		WM_ERASEBKGND OF
+			forth_handled EXIT
+		ENDOF 
+		
 		WM_CREATE OF
 			forth_handled EXIT
 		ENDOF 
@@ -19,8 +23,7 @@
 			8 cells malloc to _rect 
 			_ps hwnd call BeginPaint to hdc
 			_rect hwnd call GetClientRect drop 
-			-10 -10 _rect call InflateRect drop
-			COLOR_MENUTEXT 1 +  _rect hdc call FillRect drop
+			0 0 hdc display	
 			_ps hwnd call EndPaint drop
 			_ps free
 			_rect free
@@ -44,11 +47,11 @@
 				ENDOF
 				
 				VK_LEFT OF
-			 
+					gun-x 0 > IF gun-x 4 - to gun-x THEN
 				ENDOF
 				
 				VK_RIGHT OF
-				 
+					gun-x 540 < IF gun-x 4 + to gun-x THEN
 				ENDOF
 				
 				VK_SPACE OF
@@ -87,7 +90,7 @@ create wind-class-graphics
  
 : make-graphics-window
 	0 hmod 0 0  
-	CW_USEDEFAULT CW_USEDEFAULT		
+	610 800		
 	CW_USEDEFAULT CW_USEDEFAULT 
 	WS_OVERLAPPED 
 	WS_BORDER + WS_SYSMENU + WS_MINIMIZEBOX + WS_VISIBLE +
@@ -97,11 +100,13 @@ create wind-class-graphics
 variable graphics-tid
 variable graphics-thread-param
 
+
 : graphics-poll-loop   {: | window-handle _MSG -- :}
 
 	wind-class-graphics register-class drop
 	8 cells malloc to _MSG
 	make-graphics-window to window-handle
+	window-handle to graphics-hwnd
 	app-name window-handle SetWindowTextA drop
 	SW_SHOW window-handle ShowWindow 
 
