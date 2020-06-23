@@ -227,7 +227,7 @@ Gdiplus::Status HBitmapToBitmap(HBITMAP source, Gdiplus::PixelFormat pixel_forma
 	return Gdiplus::Ok;
 }
 
-extern "C" __declspec(dllexport) ptr  __stdcall DRAWSTRING(char* text, int y, int x)
+extern "C" __declspec(dllexport) ptr  __stdcall DRAWSTRING(char* text, int y, int x )
 {
 
 	std::wstring draw_text = widen(text);
@@ -384,6 +384,52 @@ extern "C" __declspec(dllexport) ptr  __stdcall IMAGETOSURFACE(Image* image, int
 	return Strue;
 }
 
+
+extern "C" __declspec(dllexport) ptr  __stdcall ROTATEDIMAGETOSURFACE(int angle, Image * image, int y, int x)
+{
+	if (image_surface == nullptr)
+	{
+		return Snil;
+	}
+	Graphics g(image_surface);
+	Gdiplus::PointF center(x / 2, y / 2);
+	Gdiplus::Matrix matrix;
+	matrix.RotateAt(angle, center);
+	g.SetTransform(&matrix);
+	g.DrawImage(image, x, y);
+	return Strue;
+}
+
+extern "C" __declspec(dllexport) ptr  __stdcall SCALEDIMAGETOSURFACE(int s, Image * image, int y, int x)
+{
+	if (image_surface == nullptr)
+	{
+		return Snil;
+	}
+	Graphics g(image_surface);
+	Gdiplus::Matrix matrix;
+	matrix.Scale(s, s);
+	g.SetTransform(&matrix);
+	g.DrawImage(image, x, y);
+	return Strue;
+}
+
+
+extern "C" __declspec(dllexport) ptr  __stdcall SCALEDROTATEDIMAGETOSURFACE( int s, int a, Image * image, int y, int x)
+{
+	if (image_surface == nullptr)
+	{
+		return Snil;
+	}
+	Graphics g(image_surface);
+	Gdiplus::Matrix matrix;
+	Gdiplus::PointF center(x / 2, y / 2);
+	matrix.Scale(s, s);
+	matrix.RotateAt(a, center);
+	g.SetTransform(&matrix);
+	g.DrawImage(image, x, y);
+	return Strue;
+}
 
 extern "C" __declspec(dllexport) ptr  __stdcall LOADTOSURFACE(char* filename, int y, int x)
 {
