@@ -9,6 +9,7 @@ library winshim.dll
  0 import: _MATRIXRESET@0
  0 import: _MATRIXINVERT@0
  2 import: _CLG@8
+ 2 import: _CLS@8
  2 import: _FLIP@8
  1 import: _MATRIXROTATE@4
  3 import: _MATRIXROTATEAT@12
@@ -94,6 +95,9 @@ library winshim.dll
 : clg ( w h --)			
 	call _CLG@8 drop ;
 
+: clr ( w h --)			
+	call _CLS@8 drop ;
+
 : pen-width ( w -- )		
 	call _PENWIDTH@4 drop ;
 
@@ -143,7 +147,9 @@ library winshim.dll
 	call _SAVETOCLIPBOARD@4 drop ;
 
  
-create gdi-text ," !Moon-Bugs! " 0 , 0 ,  
+\ --------------------------------------------------
+ 
+create gdi-text ," Moon-Bugs " 0 , 0 ,  
 gdi-text 1+ value gdi-text
 
 0 value gdi-plus-surface 
@@ -152,64 +158,107 @@ gdi-text 1+ value gdi-text
 200 value gun-x
 200 value gun-y
 
+0 value tile-image 
+-1400 value tile-x
+-800 value tile-y
 
+0 value offset-x
+0 value offset-y
+
+0 value alienoid-1-image 
+
+variable alienoid-xpos 256 cells allot
+variable alienoid-ypos 256 cells allot
+	
+ : ax! ( x a -- )
+	cells alienoid-xpos + ! ;
+ 
+ : ax@ ( x a -- )
+	cells alienoid-xpos + @ ; 
+
+ : ay! ( x a -- )
+	cells alienoid-ypos + ! ;
+ 
+ : ay@ ( x a -- )
+	cells alienoid-ypos + @ ; 
+
+ 
+ : set-alien-start
+   0  
+   5 1 do
+	12 1 do 
+		dup i 64 * swap ax!
+		dup j 64 * 800 - swap ay!
+		1 +
+	loop
+   loop ;
+   
+ 
+   
  : init-graphics
 	init-gdi-plus
 	high-quality
-	500 400 clg  
 	reset-matrix
+	800 600 clg  
 	get-gdi-surface to gdi-plus-surface
 	
 	;
 
 
- : init-gun-ship 
-		z" HeroSmall.png" load-image to gun-ship-image ;
+ : init-images
+		z" HeroSmall.png" load-image to gun-ship-image	
+		z" AlienOidOneSmall.png" load-image to alienoid-1-image 
+		z" clays.jpg" load-image to tile-image		
+		set-alien-start ;
  
 
-
 : clear-graphics 
-  	800 600 clg  
+	800 600 clr  
 	reset-matrix ;
 
-: display-gun-ship
-   gun-x gun-y  
-   gun-ship-image 
-   14 draw-scaled-image
-   20 pen-width  
-   150 250 250 $FF colour  
-   200 200 30 30 draw-rect 
+: display-alien ( a -- )
+	dup ax@ offset-x + 
+	swap ay@ offset-y +
+	alienoid-1-image draw-image ;
 
+: alien-down ( a -- )
+	dup ay@ 1 + swap ay! ;
+	
+: shift-aliens-down
+   44 0 do 
+	i alien-down 
+   loop  ;
+  
+ 
+: display-gun-ship
+
+   20 font-size
+   150 250 250 $FF colour  
+   150 250 250 $FF solid-brush   
+   
+   INFINITE app-mutex call WaitForSingleObject drop
+   tile-x tile-y tile-image draw-image 
+   44 0 do 
+	i display-alien 
+   loop 
+   gun-x gun-y gun-ship-image 24 draw-scaled-image 
+  
+   20 20 gdi-text draw-string 
+   app-mutex call ReleaseMutex drop
+   
+   shift-aliens-down
+   
+   0 ay@ 800 > IF 
+    set-alien-start
+   THEN
+  
+	
+
+   
    ;
  
 
 
 
 	
-: test 
-	
-	30 30 gun-ship-image draw-image
-	
  
-	150 150 gun-ship-image 20 draw-scaled-image
-	
-	50 50 gun-ship-image 450 40 draw-scaled-rotated-image
-	
-	20 2 do 
-	
-		i 10 *  i 10 *  gun-ship-image  i 4 *  i 8 * draw-scaled-rotated-image
-	
-	loop
-	
-	250 10  100 $FF solid-brush   
-	100 100 30 30 fill-rect
-	20 pen-width  
-	150 250 250 $FF colour  
-	200 200 30 30 draw-rect 
-	
-	150 250 250 $FF colour  
-	44 font-size
-	
-	
-	\ z" test.png" save-as-png 
- ;

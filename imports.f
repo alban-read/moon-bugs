@@ -12,6 +12,7 @@ library WinUser
  1 import: TranslateMessage
  1 import: DispatchMessage
  2 import: ShowWindow
+ 2 import: WaitForSingleObject
  1 import: Sleep
  6 import: CreateThread
  1 import: UpdateWindow
@@ -31,8 +32,9 @@ library WinUser
  2 import: SelectObject 
  9 import: BitBlt 
  1 import: DeleteObject 
+ 1 import: ReleaseMutex 
  1 import: DeleteDC 
- 3 import: CreateMutex 
+ 3 import: CreateMutexA 
  3 import: InvalidateRect 
  1 import: CreatePalette 
  1 import: IsGUIThread

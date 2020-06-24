@@ -53,11 +53,11 @@ variable message-thread-param
 	wind-class-message register-class drop
 	8 cells malloc to _MSG
 	make-message-window to window-handle
-	0 40 1000 window-handle SetTimer
+	0 30 1000 window-handle SetTimer
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 
-		dup -1 = IF ." message poll error!" cr THEN
+		dup -1 = IF BYE THEN
 		0 > WHILE 
 			_MSG call DispatchMessage drop
 		REPEAT 

@@ -23,35 +23,56 @@
 			8 cells malloc to _rect 
 			_ps hwnd call BeginPaint to hdc
 			_rect hwnd call GetClientRect drop 
+			INFINITE app-mutex call WaitForSingleObject drop
 			0 0 hdc display	
+			app-mutex call ReleaseMutex drop
 			_ps hwnd call EndPaint drop
 			_ps free
 			_rect free
 			 forth_handled EXIT
 		ENDOF  
-			
-		WM_NCHITTEST OF
-			." hit test"
-			lParam lowword .
-			lParam hiword . cr
-		ENDOF	
-					
 					
 					
 		WM_KEYDOWN OF
 		
+			\ mutex as we want all positions udated together.
+			INFINITE app-mutex call WaitForSingleObject drop
+			
 			wParam CASE
-		
 				VK_CONTROL OF
 				  tracking not to tracking
 				ENDOF
 				
+				VK_DOWN OF
+					gun-y 800 < IF 
+					gun-y 1 + to gun-y 
+					tile-y 2 - to tile-y
+					offset-y 2 - to offset-y
+					THEN
+				ENDOF
+					
+				VK_UP OF
+					gun-y 0 > IF 
+					gun-y 1 - to gun-y 
+					tile-y 2 + to tile-y
+					offset-y 2 + to offset-y
+					THEN
+				ENDOF
+				
 				VK_LEFT OF
-					gun-x 0 > IF gun-x 4 - to gun-x THEN
+					gun-x 0 > IF 
+					gun-x 1 - to gun-x 
+					tile-x 2 + to tile-x
+					offset-x 2 + to offset-x
+					THEN
 				ENDOF
 				
 				VK_RIGHT OF
-					gun-x 540 < IF gun-x 4 + to gun-x THEN
+					gun-x 540 < IF 
+					gun-x 1 + to gun-x 
+					tile-x 2 - to tile-x
+					offset-x 2 - to offset-x
+					THEN
 				ENDOF
 				
 				VK_SPACE OF
@@ -62,7 +83,7 @@
 					hwnd CloseWindow drop
 					forth_handled EXIT
 				ENDOF
-				
+				app-mutex call ReleaseMutex drop
 			ENDCASE
 
 		ENDOF	
@@ -79,8 +100,6 @@
 	lParam wParam uMsg hwnd cr call DefWindowProcA  
  ;
   
- 
-
  
 create wind-class-graphics
  0 , ' MyWndProc ,  0 ,  0 ,  hmod , 		 
@@ -113,7 +132,7 @@ variable graphics-thread-param
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 
-		dup -1 = IF ." graphics poll error!" cr THEN
+		dup -1 = IF BYE THEN
 		0 > WHILE 
 			_MSG call DispatchMessage drop
 		REPEAT 
