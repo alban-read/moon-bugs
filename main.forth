@@ -1,3 +1,6 @@
+\ Moon Bugs
+\
+
 create app-name ," !Moon-Bugs " 0 , 0 ,  
 app-name 1+ value app-name
 app-name 1+ value app-title
@@ -6,7 +9,6 @@ app-name 1+ value app-title
 
 
 include imports.f 
-
 include utils.f 
 include gdiplus.f
 

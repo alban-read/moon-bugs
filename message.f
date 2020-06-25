@@ -13,10 +13,9 @@
 		
 		WM_TIMER OF
 			ticks 1 + to ticks 
-			
-			clear-graphics 
-			display-gun-ship
-			redisplay 
+		    swap-surfaces 
+			redisplay   
+			update-the-display
 			
 			forth_handled EXIT
 		ENDOF 
