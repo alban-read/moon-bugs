@@ -362,7 +362,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall SETPIXEL(int y, int x)
 	return Strue;
 }
 
-extern "C" __declspec(dllexport) ptr  __stdcall DISPLAY(HDC h, int y, int x )
+extern "C" __declspec(dllexport) ptr  __stdcall DISPLAYACTIVE(HDC h, int y, int x )
 {
 	if (image_surface == nullptr)
 	{
@@ -372,6 +372,18 @@ extern "C" __declspec(dllexport) ptr  __stdcall DISPLAY(HDC h, int y, int x )
 	g.DrawImage(image_surface, x, y);
 	return Strue;
 }
+
+extern "C" __declspec(dllexport) ptr  __stdcall DISPLAYSURFACE(Gdiplus::Bitmap* image_surface,HDC h, int y, int x)
+{
+	if (image_surface == nullptr)
+	{
+		return Snil;
+	}
+	Graphics g(h);
+	g.DrawImage(image_surface, x, y);
+	return Strue;
+}
+
 
 extern "C" __declspec(dllexport) ptr  __stdcall IMAGETOSURFACE(Image* image, int y, int x)
 {
@@ -394,7 +406,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall ROTATEDIMAGETOSURFACE(int angle,
 	Graphics g(image_surface);
 	Gdiplus::PointF center(x / 2, y / 2);
 	Gdiplus::Matrix matrix;
-	matrix.RotateAt(angle, center);
+	matrix.RotateAt(angle*0.1, center);
 	g.SetTransform(&matrix);
 	g.DrawImage(image, x, y);
 	return Strue;
