@@ -408,7 +408,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall SCALEDIMAGETOSURFACE(int s, Imag
 	}
 	Graphics g(image_surface);
 	Gdiplus::Matrix matrix;
-	matrix.Scale(s, s);
+	matrix.Scale(s*0.1, s*0.1);
 	g.SetTransform(&matrix);
 	g.DrawImage(image, x, y);
 	return Strue;
@@ -424,8 +424,8 @@ extern "C" __declspec(dllexport) ptr  __stdcall SCALEDROTATEDIMAGETOSURFACE( int
 	Graphics g(image_surface);
 	Gdiplus::Matrix matrix;
 	Gdiplus::PointF center(x / 2, y / 2);
-	matrix.Scale(s, s);
-	matrix.RotateAt(a, center);
+	matrix.Scale(s*0.1, s*0.1);
+	matrix.RotateAt(a*0.1, center);
 	g.SetTransform(&matrix);
 	g.DrawImage(image, x, y);
 	return Strue;
@@ -785,6 +785,44 @@ extern "C" __declspec(dllexport) ptr  __stdcall PAPER(int r, int g, int b, int a
 	return Strue;
 }
 
+extern "C" __declspec(dllexport) void* __stdcall NEWSURFACE(int h, int w)
+{
+	if (transform_matrix == nullptr)
+	{
+		transform_matrix = new Gdiplus::Matrix();
+	}
+	if (paper_brush == nullptr)
+	{
+		paper_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 0, 0, 0));
+	}
+	 
+	image_surface = new Gdiplus::Bitmap(w, h, PixelFormat32bppRGB);
+	ClipRegion = new Gdiplus::Region(Gdiplus::Rect(0, 0, image_surface->GetWidth(), image_surface->GetHeight()));
+	Gdiplus::Graphics g2(image_surface);
+	g2.FillRectangle(paper_brush, 0, 0, w, h);
+	return image_surface;
+}
+
+
+extern "C" __declspec(dllexport) ptr __stdcall FREESURFACE(Gdiplus::Bitmap *surface)
+{
+	if (surface != nullptr)
+	{
+		delete surface;
+	}
+	return Strue;
+}
+
+extern "C" __declspec(dllexport) ptr __stdcall ACTIVATESURFACE(Gdiplus::Bitmap *surface)
+{
+	if (surface != nullptr)
+	{
+		image_surface = surface;
+	}
+	return Strue;
+}
+
+
 extern "C" __declspec(dllexport) ptr __stdcall CLG(int h, int w)
 {
 	if (transform_matrix == nullptr)
@@ -805,6 +843,13 @@ extern "C" __declspec(dllexport) ptr __stdcall CLG(int h, int w)
 	g2.FillRectangle(paper_brush, 0, 0, w, h);
 	return Strue;
 }
+
+extern "C" __declspec(dllexport) ptr __stdcall CLS(int h, int w) {
+	Gdiplus::Graphics g2(image_surface);
+	g2.FillRectangle(paper_brush, 0, 0, w, h);
+	return Strue;
+}
+
 
 extern "C" __declspec(dllexport) void* __stdcall MAKESURFACE(int h, int w)
 {
