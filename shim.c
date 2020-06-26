@@ -105,7 +105,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall MATRIXROTATEAT(int angle, int x,
 	{
 		transform_matrix = new Gdiplus::Matrix();
 	}
-	transform_matrix->RotateAt(angle, PointF(x, y));
+	transform_matrix->RotateAt(angle*0.1, PointF(x, y));
 	return Strue;
 }
 
@@ -115,7 +115,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall MATRIXROTATE(int angle)
 	{
 		transform_matrix = new Gdiplus::Matrix();
 	}
-	transform_matrix->Rotate(angle);
+	transform_matrix->Rotate(angle*0.1);
 	return Strue;
 }
 
@@ -172,12 +172,12 @@ int GetEncoderClsid(WCHAR* format, CLSID* pClsid)
 	return -1;
 }
 
-Gdiplus::Bitmap* ResizeClone( INT height, INT width, Bitmap* bmp )
+extern "C" __declspec(dllexport) Gdiplus::Bitmap* __stdcall RESIZEDCLONESURFACE(Gdiplus::Bitmap *bmp, int h, int w)
 {
 	UINT o_height = bmp->GetHeight();
 	UINT o_width = bmp->GetWidth();
-	INT n_width = width;
-	INT n_height = height;
+	INT n_width = w;
+	INT n_height = h;
 	double ratio = ((double)o_width) / ((double)o_height);
 	if (o_width > o_height) {
 		// Resize down by width
@@ -191,6 +191,48 @@ Gdiplus::Bitmap* ResizeClone( INT height, INT width, Bitmap* bmp )
 	graphics.DrawImage(bmp, 0, 0, n_width, n_height);
 	return newBitmap;
 }
+
+extern "C" __declspec(dllexport) Gdiplus::Image * __stdcall RESIZEDCLONE(Gdiplus::Image * image, int h, int w)
+{
+	UINT o_height = image->GetHeight();
+	UINT o_width = image->GetWidth();
+	INT n_width = w;
+	INT n_height = h;
+	double ratio = ((double)o_width) / ((double)o_height);
+	if (o_width > o_height) {
+		// Resize down by width
+		n_height = static_cast<UINT>(((double)n_width) / ratio);
+	}
+	else {
+		n_width = static_cast<UINT>(n_height * ratio);
+	}
+	Gdiplus::Image* new_image = new Gdiplus::Bitmap(n_width, n_height, image->GetPixelFormat());
+	Gdiplus::Graphics graphics(new_image);
+	graphics.DrawImage(image, 0, 0, n_width, n_height);
+	return new_image;
+}
+
+
+extern "C" __declspec(dllexport) Gdiplus::Image * __stdcall ROTATEDCLONE(int a, Gdiplus::Image * image)
+{
+	
+	FLOAT angle = a * 0.1;
+	int h = image->GetHeight();
+	int w = image->GetWidth();
+	Gdiplus::PointF center(w / 2, h / 2);
+	int new_h = h * 1.8;
+	int new_w = w * 1.8;
+	Gdiplus::Image* new_image = new Gdiplus::Bitmap(new_w, new_h, image->GetPixelFormat());
+	Graphics g(new_image);
+	Gdiplus::Matrix matrix;
+	matrix.Translate(new_w/2, new_h/2);
+	matrix.RotateAt(angle, center);
+	g.SetTransform(&matrix);
+	g.DrawImage(image, 0, 0);
+	return new_image;
+}
+
+
 
 Gdiplus::Status HBitmapToBitmap(HBITMAP source, Gdiplus::PixelFormat pixel_format, Gdiplus::Bitmap** result_out)
 {
@@ -397,6 +439,11 @@ extern "C" __declspec(dllexport) ptr  __stdcall IMAGETOSURFACE(Image* image, int
 }
 
 
+extern "C" __declspec(dllexport) ptr  __stdcall UPSIZETOSURFACE(int s, Image* image, int y, int x)
+{
+	return 0;
+}
+
 extern "C" __declspec(dllexport) ptr  __stdcall ROTATEDIMAGETOSURFACE(int angle, Image * image, int y, int x)
 {
 	if (image_surface == nullptr)
@@ -421,11 +468,19 @@ extern "C" __declspec(dllexport) ptr  __stdcall SCALEDIMAGETOSURFACE(int s, Imag
 	Graphics g(image_surface);
 	Gdiplus::Matrix matrix;
 	matrix.Scale(s*0.1, s*0.1);
+	Point p(x , y );
 	g.SetTransform(&matrix);
-	g.DrawImage(image, x, y);
+	g.DrawImage(image, p);
 	return Strue;
 }
 
+
+
+
+extern "C" __declspec(dllexport) ptr  __stdcall DOWNSIZETOSURFACE(int s, Image * image, int y, int x)
+{
+	return 0;
+}
 
 extern "C" __declspec(dllexport) ptr  __stdcall SCALEDROTATEDIMAGETOSURFACE( int s, int a, Image * image, int y, int x)
 {
@@ -435,7 +490,7 @@ extern "C" __declspec(dllexport) ptr  __stdcall SCALEDROTATEDIMAGETOSURFACE( int
 	}
 	Graphics g(image_surface);
 	Gdiplus::Matrix matrix;
-	Gdiplus::PointF center(x / 2, y / 2);
+	Gdiplus::PointF center(image->GetWidth() / 2, image->GetHeight()/ 2);
 	matrix.Scale(s*0.1, s*0.1);
 	matrix.RotateAt(a*0.1, center);
 	g.SetTransform(&matrix);
