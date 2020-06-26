@@ -1,4 +1,5 @@
-
+\ Message procedure
+\ Does all the offscreen display work.
 
 
 0 value ticks

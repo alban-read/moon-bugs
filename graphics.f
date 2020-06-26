@@ -1,4 +1,5 @@
-
+\ Graphics procedure
+\ Handles keyboard and window display updates
 
 4 callback: MyWndProc  {: hwnd uMsg wParam lParam | hdc _ps _rect  -- exit :}
 
@@ -41,6 +42,7 @@
 				ENDOF
 				
 				VK_DOWN OF
+					lean-forward 
 					gun-y 800 < IF 
 					gun-y 1 + to gun-y 
 					tile-y 2 - to tile-y
@@ -49,6 +51,7 @@
 				ENDOF
 					
 				VK_UP OF
+					lean-forward 
 					gun-y 0 > IF 
 					gun-y 1 - to gun-y 
 					tile-y 2 + to tile-y
@@ -57,6 +60,7 @@
 				ENDOF
 				
 				VK_LEFT OF
+				    lean-left
 					gun-x 0 > IF 
 					gun-x 1 - to gun-x 
 					rotation 1 - to rotation
@@ -66,7 +70,8 @@
 				ENDOF
 				
 				VK_RIGHT OF
-					gun-x 540 < IF 
+					lean-right
+					gun-x 800 < IF 
 					gun-x 1 + to gun-x 
 					tile-x 2 - to tile-x
 					rotation 1 + to rotation
