@@ -42,45 +42,24 @@
 				ENDOF
 				
 				VK_DOWN OF
-					lean-forward 
-					gun-y 800 < IF 
-					gun-y 1 + to gun-y 
-					tile-y 2 - to tile-y
-					offset-y 2 - to offset-y
-					THEN
+					heading-down to heading
 				ENDOF
 					
 				VK_UP OF
-					lean-forward 
-					gun-y 0 > IF 
-					gun-y 1 - to gun-y 
-					tile-y 2 + to tile-y
-					offset-y 2 + to offset-y
-					THEN
+					heading-up to heading
 				ENDOF
 				
 				VK_LEFT OF
-				    lean-left
-					gun-x 0 > IF 
-					gun-x 1 - to gun-x 
-					rotation 1 - to rotation
-					tile-x 2 + to tile-x
-					offset-x 2 + to offset-x
-					THEN
+				    heading-left to heading
 				ENDOF
 				
 				VK_RIGHT OF
-					lean-right
-					gun-x 800 < IF 
-					gun-x 1 + to gun-x 
-					tile-x 2 - to tile-x
-					rotation 1 + to rotation
-					offset-x 2 - to offset-x
-					THEN
+					heading-right to heading
 				ENDOF
 				
 				VK_SPACE OF
-				 
+			 
+					place-missile
 				ENDOF
 				
 				VK_ESCAPE OF

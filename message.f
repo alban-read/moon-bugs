@@ -2,9 +2,10 @@
 \ Does all the offscreen display work.
 
 
+0 value time-taken
 0 value ticks
 
-4 callback: TimerProc  {: hwnd uMsg wParam lParam | hdc _ps _rect  -- exit :}
+4 callback: TimerProc  {: hwnd uMsg wParam lParam | hdc _ps _rect ms  -- exit :}
 	
 	uMsg CASE 
 		
@@ -13,11 +14,13 @@
 		ENDOF 
 		
 		WM_TIMER OF
+			ms@ to ms
+			timer-reset
 			ticks 1 + to ticks 
 		    swap-surfaces 
 			redisplay   
 			update-the-display
-			
+			ms@ ms - time-taken + to time-taken
 			forth_handled EXIT
 		ENDOF 
 
@@ -53,7 +56,7 @@ variable message-thread-param
 	wind-class-message register-class drop
 	8 cells malloc to _MSG
 	make-message-window to window-handle
-	0 30 1000 window-handle SetTimer
+	0 40 1000 window-handle SetTimer
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 
@@ -75,6 +78,8 @@ variable message-thread-param
 	message-tid 0 message-thread-param ['] message-window-thread
 	0 0 call CreateThread drop ;
 
- 
+ : .stats 
+   ." avg game loop ms: " time-taken ticks / . ;
+   
 
 

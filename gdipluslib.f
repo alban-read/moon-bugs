@@ -153,6 +153,10 @@ library winshim.dll
 : fill-rect ( x y w h -- )				
 	call _FILLSOLIDRECT@16 drop ;
 
+
+: fill-ellipse ( x y w h -- )				
+	call _FILLSOLIDELLIPSE@16 drop ;
+
 : hatch-rect ( x y w h -- )			
 	call _FILLHATCHRECT@16 drop ;
 
