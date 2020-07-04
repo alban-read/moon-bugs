@@ -4,18 +4,10 @@ include gdipluslib.f
 create gdi-text ," Moon-Bugs " 0 , 0 ,  
 gdi-text 1+ value gdi-text
 
-
-\ We have two surfaces (DOuble buffering) which are bitmaps
-\ the surface to display; and the surface to update
-\ We draw on the surface to update; while the surface to
-\ display is being shown in the winDOw.
-\ The surfaces are rotated; bringing the updated surface
-\ into the surface to display
-\ At any point we are showing one surface while updating
-\ the other.
-
-
-
+\ from rectange get radius
+: get-radius ( w h -- r ) 
+  dup 2 / swap 8 * rot dup * swap / + ;
+  
 0 value surface-to-display
 0 value surface-to-update
 
@@ -47,6 +39,8 @@ gdi-text 1+ value gdi-text
   
 400 value gun-x
 520 value gun-y
+64 value gun-width
+64 value gun-height
 
 0 value tile-image 
 -1440 value tile-x
@@ -55,7 +49,27 @@ gdi-text 1+ value gdi-text
 0 value offset-x
 0 value offset-y
 
+1 constant aliens-moving 
+2 constant aliens-paused
+3 constant alien-destroyed
+
+aliens-moving value aliens-active
+  
+: toggle-alien-movement
+   aliens-active aliens-paused = 
+   IF 
+		aliens-moving to aliens-active 
+   ELSE 
+		aliens-paused to aliens-active
+   ENDIF
+ ;
+  
 0 value alienoid-1-image 
+64 value alienoid-width
+64 value alienoid-height
+
+alienoid-width alienoid-height get-radius 
+value alienoid-radius
 0 value rotation 
 
 \ where is the gun ship heading.
@@ -72,9 +86,17 @@ heading-stopped value heading
 
  16 constant missile-count
  0 value lastshot 
+ 8 value missile-width
+ 8 value missile-height
+ missile-width missile-height get-radius 
+ value missile-radius
+ 
  variable mx missile-count 1+ cells allot
  variable my missile-count 1+ cells allot
  variable mh missile-count 1+ cells allot
+ 
+ missile-radius alienoid-radius + value hitradius
+ 
 
  : mx@ ( n -- x )
 	cells mx + @ ; 
@@ -94,6 +116,12 @@ heading-stopped value heading
  : mh! ( x a -- )
 	cells mh + ! ;
  
+: adjust-my 
+	my@   missile-height 2 / + ;
+
+ : adjust-mx 
+	mx@   missile-width 2 / +  ;
+
 
 : place-missile  
 	
@@ -103,8 +131,8 @@ heading-stopped value heading
 	
 	missile-count 0 DO 
 		i my@ 0= IF 
-			gun-x 24 + i mx!
-			gun-y  8 + i my!
+			gun-x gun-width 2 / + 8 - i mx!
+			gun-y gun-height 2 / + i my!
 			heading i mh!
 			ms@ to lastshot
 			LEAVE
@@ -112,6 +140,10 @@ heading-stopped value heading
 	LOOP		
 ;
 
+
+: free-missile ( n -- )
+	dup 0 my! 0 mx! ;
+	
 
 : move-missiles 
  
@@ -153,12 +185,18 @@ heading-stopped value heading
 		ENDIF
 	LOOP
 	;
+
+
+
 		
 : display-missiles  
 
 	missile-count 0 DO 
 	
 		i my@ 0= NOT IF 
+	
+			$FF $FF $FF 40 solid-brush  
+			i mx@ i my@ 8 - 16 16 fill-ellipse 
 	
 			$FF $FF $00 150 solid-brush
 			i mx@ 4 + i my@ 4 - 8 8 fill-ellipse 
@@ -173,6 +211,16 @@ heading-stopped value heading
 \ The images have positions on the surface
 variable alienoid-xpos 256 cells allot
 variable alienoid-ypos 256 cells allot
+variable alienoid-active 256 cells allot
+	
+	
+ : a?! ( x a -- )
+	cells alienoid-active + ! ;
+	inline
+ 
+ : a?@ ( a -- n )
+	cells alienoid-active + @ ; 
+	inline	
 	
  : ax! ( x a -- )
 	cells alienoid-xpos + ! ;
@@ -191,19 +239,63 @@ variable alienoid-ypos 256 cells allot
 	inline
 
  : set-alien-start
-   0  
-   5 1 DO
-	12 1 DO 
-		dup i 64 * swap ax!
-		dup j 64 * 800 - swap ay!
-		1 +
-	LOOP
-   LOOP ;
+ 
+   8 0 DO
+    i 64 * i ax!
+    80 i ay!
+    aliens-moving i a?!
+   LOOP
    
+   ;
+   
+ 
+	
+ : adjust-ax  
+	ax@ offset-x + alienoid-width 2 / + ;
+	
+ : adjust-ay  
+	ay@ offset-y + alienoid-height 2 / + ;
+	 
+ : ellipse-alien ( n -- ) 
+	dup adjust-ax swap adjust-ay 64 64 draw-ellipse ;
+	
+ \ for each missile, check for aliens  
+ : missile-alien-collisions
+	\ missiles
+	missile-count 0 DO 
+		\ missiles
+		i my@ 0= NOT IF
+			\ aliens
+			44 0 DO 
+				  i a?@ aliens-moving = IF	
+					\ check if circles collide
+					j adjust-mx
+					i adjust-ax - dup *
+					j adjust-my
+					i adjust-ay - dup *
+					+ sqrt 
+					hitradius < IF	
+					\ we may have hit the alien
+						j adjust-my
+						i adjust-ay > IF
+							j adjust-mx
+							i adjust-ax > IF
+								i ellipse-alien 
+								0 j my!	0 j mx!
+								alien-destroyed i a?! 	
+							ENDIF	
+						ENDIF	
+					ENDIF				
+			  ENDIF
+			LOOP 
+		ENDIF
+	LOOP
+ ; 
+  
  
  : init-images
 	z" Hero.png" load-image to hero-image 
-	64 64 hero-image resized-clone to gun-ship-forward
+	gun-width gun-height hero-image resized-clone to gun-ship-forward
 	gun-ship-forward 150 rotated-clone to gun-ship-lean-right
 	gun-ship-forward -150 rotated-clone to gun-ship-lean-left
 	gun-ship-forward to gun-ship-image 
@@ -212,8 +304,6 @@ variable alienoid-ypos 256 cells allot
 	z" clays.jpg" load-image to tile-image		
 	set-alien-start ;
  
- 
-	
 	
  : lean-left
  
@@ -230,8 +320,7 @@ variable alienoid-ypos 256 cells allot
 	ENDCASE
 	
 	;	
-	
-		 
+	 
  : lean-right
  
 	gun-ship-image CASE
@@ -251,20 +340,36 @@ variable alienoid-ypos 256 cells allot
  : lean-forward 
 	gun-ship-forward to gun-ship-image ;
 	
-	
-	 
  : display-alien ( a -- )
-	dup ax@ offset-x + 
-	swap ay@ offset-y +
-	alienoid-1-image draw-image ;
+	dup a?@ aliens-moving = IF 
+		dup adjust-ax
+		swap adjust-ay
+		alienoid-1-image draw-image 
+	ENDIF
+	;
+
+ : display-aliens 
+	8 0 DO 
+		i display-alien 
+	LOOP 
+	;
 
  : alien-down ( a -- )
-	dup ay@ 1 + swap ay! ;
+	dup a?@ aliens-moving = IF 
+		dup ay@ 1 + swap ay! 
+	ENDIF	
+  ;
 	
  : shift-aliens-down
-	44 0 DO 
-		i alien-down 
-	LOOP  ;
+	
+	aliens-moving aliens-active = IF 
+	
+		44 0 DO 
+			i alien-down 
+		LOOP  
+		
+	ENDIF
+	;
 
  
  \ the background is panned 
@@ -297,7 +402,6 @@ variable alienoid-ypos 256 cells allot
 	ENDIF
 	;
 		
-	
  : move-down
  
 	lean-forward 
@@ -311,7 +415,6 @@ variable alienoid-ypos 256 cells allot
 	pan-up 
 	;
 
-		
  : move-up
  
 	lean-forward 
@@ -326,7 +429,6 @@ variable alienoid-ypos 256 cells allot
 	
 	;
 	
-	
  : move-left 
  
 	lean-left
@@ -339,7 +441,6 @@ variable alienoid-ypos 256 cells allot
 
 	;
 	
-
  : move-right 	
  
 	lean-right
@@ -379,12 +480,16 @@ variable alienoid-ypos 256 cells allot
 	ENDCASE ;
 	
  
+25 value time-taken
+ 1 value ticks
+
 : display-status 
-	20 font-size
+	18 font-size
 	150 250 250 $FF colour  
 	150 250 250 $FF solid-brush  
-	10 10 gdi-text draw-string 
-	
+	10 4 gdi-text draw-string 
+	140 4 time-taken ticks / s>d <# #S 0 HOLD #> drop 1+ draw-string drop
+	180 4 z" ms" draw-string 
 	;
  
  
@@ -398,15 +503,14 @@ variable alienoid-ypos 256 cells allot
 
 	display-missiles
 
-	44 0 DO 
-		i display-alien 
-	LOOP 
+	display-aliens 
+	
 	
 	gun-x gun-y gun-ship-image draw-image
 	
 	display-status	
-
 	
+	missile-alien-collisions
 
 	shift-aliens-down
 
@@ -431,9 +535,6 @@ variable alienoid-ypos 256 cells allot
 	800 600 new-surface to surface-to-display
 	800 600 new-surface to surface-to-update
 	surface-to-update activate-surface 
-	
-	
-	
 	update-the-display
 	
 	;

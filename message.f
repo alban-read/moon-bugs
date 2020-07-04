@@ -2,8 +2,6 @@
 \ Does all the offscreen display work.
 
 
-0 value time-taken
-0 value ticks
 
 4 callback: TimerProc  {: hwnd uMsg wParam lParam | hdc _ps _rect ms  -- exit :}
 	

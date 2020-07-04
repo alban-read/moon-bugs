@@ -22,3 +22,8 @@ ms@ lowword value rng
   
 ' THEN alias ENDIF
 
+: sqrt 
+  0 tuck
+  ?do 1+ dup 2* 1+ +loop
+;
+  

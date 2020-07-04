@@ -38,7 +38,10 @@
 		
 			wParam CASE
 				VK_CONTROL OF
-				  tracking not to tracking
+		 
+					toggle-alien-movement
+				  
+			 
 				ENDOF
 				
 				VK_DOWN OF
@@ -111,7 +114,6 @@ variable graphics-thread-param
 	window-handle to graphics-hwnd
 	app-name window-handle SetWindowTextA drop
 	SW_SHOW window-handle ShowWindow 
-
 	BEGIN
 		BEGIN
 		0 0 window-handle _MSG Call GetMessageA 
